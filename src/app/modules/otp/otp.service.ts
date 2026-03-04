@@ -80,8 +80,6 @@ const resendOtp = async (email: string) => {
   const otp = generateOtp();
   const expiresAt = moment().add(3, 'minute');
 
-  console.log(otp);
-
   const updateOtp = await User.findByIdAndUpdate(
     user?._id,
     {

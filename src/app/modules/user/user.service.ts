@@ -39,11 +39,12 @@ const createUser = async (payload: IUser): Promise<IUser> => {
 };
 
 const getAllUser = async (query: Record<string, any>) => {
-  const userModel = new QueryBuilder(User.find(), query)
+  const userModel = new QueryBuilder(User.find().select('-password'), query)
     .search(['name', 'email', 'phoneNumber', 'status'])
     .filter()
     .paginate()
-    .sort();
+    .sort()
+    .fields();
   const data: any = await userModel.modelQuery;
   const meta = await userModel.countTotal();
   return {
@@ -53,7 +54,7 @@ const getAllUser = async (query: Record<string, any>) => {
 };
 
 const geUserById = async (id: string) => {
-  const result = await User.findById(id);
+  const result = await User.findById(id).select('-password');
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }

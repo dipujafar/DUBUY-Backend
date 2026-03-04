@@ -34,7 +34,6 @@ const userSchema: Schema<IUser> = new Schema(
     profile: {
       type: String,
       default: null,
-      unique: true,
     },
 
     gender: {
@@ -174,15 +173,27 @@ userSchema.pre('save', async function (next) {
 
   next();
 });
+
 // set '' after saving password
-userSchema.post(
-  'save',
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function (error: Error, doc: any, next: (error?: Error) => void): void {
-    doc.password = '';
-    next();
-  },
-);
+// userSchema.post(
+//   'save',
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   function (error: Error, doc: any, next: (error?: Error) => void): void {
+//     doc.verification.otp = 0;
+//     doc.password = '';
+//     next();
+//   },
+// );
+
+// userSchema.post(
+//   'findOneAndUpdate',
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   function (error: Error, doc: any, next: (error?: Error) => void): void {
+//     doc.verification.otp = 0;
+//     doc.password = '';
+//     next();
+//   },
+// );
 
 userSchema.statics.isUserExist = async function (phoneNumber: string) {
   return await User.findOne({ phoneNumber: phoneNumber }).select('+password');
@@ -236,6 +247,13 @@ userSchema.statics.isPasswordMatched = async function (
 
 userSchema.post('save', function (doc, next) {
   doc.password = '';
+  doc.verification.otp = 0;
+  next();
+});
+
+userSchema.post('findOneAndUpdate', function (doc, next) {
+  doc.password = '';
+  doc.verification.otp = 0;
   next();
 });
 

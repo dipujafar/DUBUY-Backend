@@ -13,6 +13,7 @@ export const checkUserExit = async (payload: IUser) => {
     payload.email as string,
   );
 
+
   if (isExist?.phoneExists && !isExist?.user?.verification?.status) {
     const { phoneNumber, ...updateData } = payload;
     updateData.password = await bcrypt.hash(

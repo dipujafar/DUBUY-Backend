@@ -16,6 +16,10 @@ import { User } from '../user/user.models';
 import UAParser from 'ua-parser-js';
 import { Request } from 'express';
 import { IExitUser, IUser } from '../user/user.interface';
+import { sendEmail } from '../../utils/mailSender';
+import fs from 'fs';
+import path from 'path';
+
 // import firebaseAdmin from '../../utils/firebase';
 
 // Login
@@ -124,8 +128,8 @@ const changePassword = async (id: string, payload: TChangePassword) => {
 };
 
 // Forgot password
-const forgotPassword = async (phoneNumber: string) => {
-  const user = await User.isUserExist(phoneNumber);
+const forgotPassword = async (email: string) => {
+  const user = await User.isUserExistEmail(email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
@@ -135,7 +139,7 @@ const forgotPassword = async (phoneNumber: string) => {
   }
 
   const jwtPayload = {
-    phoneNumber: phoneNumber,
+    email: email,
     userId: user?._id,
   };
 
@@ -156,24 +160,24 @@ const forgotPassword = async (phoneNumber: string) => {
     },
   });
 
-  // const otpEmailPath = path.join(
-  //   __dirname,
-  //   '../../../../public/view/forgot_pass_mail.html',
-  // );
+  const otpEmailPath = path.join(
+    __dirname,
+    '../../../../public/view/forgot_pass_mail.html',
+  );
 
-  // await sendEmail(
-  //   user?.email,
-  //   'Your reset password OTP is',
-  //   fs
-  //     .readFileSync(otpEmailPath, 'utf8')
-  //     .replace('{{otpCode}}', otp)
-  //     .replace('{{fullName}}', user?.name)
-  //     .replace(
-  //       '{{resetUrl}}',
-  //       `${config.server_url}/auth/reset-password-page?token=${token}`.trim(),
-  //     ),
-  // );
-  return { phoneNumber, token };
+  await sendEmail(
+    user?.email,
+    'Your reset password OTP is',
+    fs
+      .readFileSync(otpEmailPath, 'utf8')
+      .replace('{{otpCode}}', otp)
+      .replace('{{fullName}}', user?.name)
+      .replace(
+        '{{resetUrl}}',
+        `${config.server_url}/auth/reset-password-page?token=${token}`.trim(),
+      ),
+  );
+  return { email, token };
 };
 
 // Reset password
@@ -194,7 +198,6 @@ const resetPassword = async (token: string, payload: TResetPassword) => {
   const user: IUser | null = await User.findById(decode?.userId).select(
     'isDeleted verification',
   );
-  console.log('🚀 ~ resetPassword ~ user:', user);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
