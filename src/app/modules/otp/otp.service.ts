@@ -80,14 +80,17 @@ const resendOtp = async (email: string) => {
   const otp = generateOtp();
   const expiresAt = moment().add(3, 'minute');
 
+  console.log(otp);
+
   const updateOtp = await User.findByIdAndUpdate(
     user?._id,
     {
       $set: {
+        expireAt: null,
         verification: {
           otp,
           expiresAt,
-          status: true,
+          status: false,
         },
       },
     },
@@ -103,6 +106,7 @@ const resendOtp = async (email: string) => {
 
   const jwtPayload = {
     email: user?.email,
+    phoneNumber: user?.phoneNumber,
     userId: user?._id,
   };
   const token = jwt.sign(jwtPayload, config.jwt_access_secret as Secret, {
@@ -120,6 +124,7 @@ const resendOtp = async (email: string) => {
     fs
       .readFileSync(otpEmailPath, 'utf8')
       .replace('{{otp}}', otp)
+      .replace('{{fullName}}', user?.name)
       .replace('{{email}}', user?.email),
   );
 

@@ -7,7 +7,7 @@ const router = Router();
 
 router.patch(
   '/connect',
-  auth(USER_ROLE.vendor),
+  auth(USER_ROLE.user),
   stripeController.stripLinkAccount,
 );
 router.get('/oauth/callback', stripeController?.handleStripeOAuth);

@@ -6,6 +6,11 @@ export interface AdditionalNotes {
   urgentDelivery: boolean;
 }
 
+export interface IArrivedImages {
+  key: string;
+  url: string;
+}
+
 export interface IRequests {
   image: string;
   link: string;
@@ -18,6 +23,17 @@ export interface IRequests {
   additionalNotes: AdditionalNotes;
   address: string;
   status: 'pending' | 'accepted' | 'rejected' | 'delivered';
+  shippingStatus:
+    | 'pending'
+    | 'payment_receive'
+    | 'purchased_in_UAE'
+    | 'in_warehouse'
+    | 'shipped_to_libya'
+    | 'in_warehouse'
+    | 'arrived_item_image'
+    | 'ready_to_collect'
+    | 'delivered';
+  arrivedImages?: IArrivedImages[];
   isDeleted: boolean;
 }
 

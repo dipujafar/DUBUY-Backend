@@ -34,6 +34,7 @@ const userSchema: Schema<IUser> = new Schema(
     profile: {
       type: String,
       default: null,
+      unique: true,
     },
 
     gender: {
@@ -130,7 +131,7 @@ const userSchema: Schema<IUser> = new Schema(
       },
       status: {
         type: Boolean,
-        default: true,
+        default: false,
       },
     },
     device: {
@@ -161,6 +162,7 @@ const userSchema: Schema<IUser> = new Schema(
 );
 
 userSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
+
 userSchema.pre('save', async function (next) {
   const user = this;
   if (this.password) {
@@ -184,6 +186,42 @@ userSchema.post(
 
 userSchema.statics.isUserExist = async function (phoneNumber: string) {
   return await User.findOne({ phoneNumber: phoneNumber }).select('+password');
+};
+userSchema.statics.isUserExistEmail = async function (email: string) {
+  return await User.findOne({ email: email }).select('+password');
+};
+
+userSchema.statics.isUserExist = async function (
+  phoneNumber?: string,
+  email?: string,
+) {
+  const query: any[] = [];
+
+  if (phoneNumber) {
+    query.push({ phoneNumber });
+  }
+
+  if (email) {
+    query.push({ email });
+  }
+
+  if (query.length === 0) {
+    return null; // nothing provided
+  }
+
+  const existingUser = await User.findOne({
+    $or: query,
+  }).select('+password');
+
+  if (!existingUser) {
+    return null;
+  }
+
+  return {
+    user: existingUser,
+    phoneExists: phoneNumber ? existingUser.phoneNumber === phoneNumber : false,
+    emailExists: email ? existingUser.email === email : false,
+  };
 };
 
 userSchema.statics.IsUserExistId = async function (id: string) {

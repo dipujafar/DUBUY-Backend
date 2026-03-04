@@ -4,7 +4,8 @@ export type QueryObject = {
 };
 
 export type TLogin = {
-  phoneNumber: string;
+  phoneNumber?: string;
+  email?: string;
   password: string;
 };
 export type TChangePassword = {

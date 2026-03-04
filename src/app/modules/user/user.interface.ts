@@ -43,8 +43,19 @@ export interface IUser {
   };
 }
 
+export interface IExitUser {
+  user: IUser;
+  emailExists: boolean;
+  phoneExists: boolean;
+}
+
 export interface UserModel extends Model<IUser> {
   isUserExist(phoneNumber: string): Promise<IUser>;
+  isUserExistEmail(email: string): Promise<IUser>;
+  isUserExist(
+    phoneNumber: string | undefined,
+    email: string | undefined,
+  ): Promise<IExitUser>;
   IsUserExistId(id: string): Promise<IUser>;
   IsUserExistUserName(userName: string): Promise<IUser>;
 

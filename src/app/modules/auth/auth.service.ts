@@ -12,33 +12,36 @@ import { createToken, verifyToken } from './auth.utils';
 import { generateOtp } from '../../utils/otpGenerator';
 import moment from 'moment';
 import bcrypt from 'bcrypt';
-import { IUser } from '../user/user.interface';
 import { User } from '../user/user.models';
 import UAParser from 'ua-parser-js';
 import { Request } from 'express';
+import { IExitUser, IUser } from '../user/user.interface';
 // import firebaseAdmin from '../../utils/firebase';
 
 // Login
 const login = async (payload: TLogin, req: Request) => {
-  const user: IUser | null = await User.isUserExist(payload?.phoneNumber);
-  if (!user) {
+  const user: IExitUser | null = await User.isUserExist(
+    payload?.phoneNumber,
+    payload?.email,
+  );
+  if (!user?.user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  if (user?.isDeleted) {
+  if (user?.user.isDeleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'This user is deleted');
   }
 
-  if (!(await User.isPasswordMatched(payload.password, user.password))) {
+  if (!(await User.isPasswordMatched(payload.password, user?.user?.password))) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Password does not match');
   }
 
-  if (!user?.verification?.status) {
+  if (!user?.user?.verification?.status) {
     throw new AppError(httpStatus.FORBIDDEN, 'User account is not verified');
   }
   const jwtPayload: { userId: string; role: string } = {
-    userId: user?._id?.toString() as string,
-    role: user?.role,
+    userId: user?.user?._id?.toString() as string,
+    role: user?.user?.role,
   };
 
   const accessToken = createToken(
@@ -72,7 +75,7 @@ const login = async (payload: TLogin, req: Request) => {
     },
   };
 
-  await User.findByIdAndUpdate(user?._id, data, {
+  await User.findByIdAndUpdate(user?.user?._id, data, {
     new: true,
     upsert: false,
   });

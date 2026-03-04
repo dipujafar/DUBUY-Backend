@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shippingStatus, statusEnum } from './requests.constants';
 
 export const additionalNotesSchema = z.object({
   productIsFragile: z.boolean().optional(),
@@ -46,16 +47,14 @@ export const requestSchema = z.object({
     address: z
       .string({ required_error: 'Delivery address is required' })
       .min(1, 'Delivery address is required'),
+
+    status: z.enum([...statusEnum] as [string, ...string[]]).default('pending'),
+
+    shippingStatus: z
+      .enum([...shippingStatus] as [string, ...string[]])
+      .default('pending'),
   }),
 });
-
-export const statusEnum = z.enum(
-  ['pending', 'accepted', 'rejected', 'delivered'],
-  //   {
-  //     required_error: 'Status is required',
-  //     invalid_type_error: 'Status must be a string',
-  //   },
-);
 
 export const updateRequestSchema = z.object({
   body: z
@@ -75,7 +74,15 @@ export const updateRequestSchema = z.object({
         .positive('Quantity must be greater than 0')
         .optional(),
       address: z.string().min(1, 'Delivery address is required').optional(),
-      status: statusEnum.optional(),
+      status: z
+        .enum([...statusEnum] as [string, ...string[]])
+        .default('pending')
+        .optional(),
+
+      shippingStatus: z
+        .enum([...shippingStatus] as [string, ...string[]])
+        .default('pending')
+        .optional(),
 
       // make nested object optional AND its fields optional
       additionalNotes: additionalNotesSchema.partial().optional(),

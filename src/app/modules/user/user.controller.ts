@@ -6,17 +6,13 @@ import httpStatus from 'http-status';
 import { uploadToS3 } from '../../utils/s3';
 import { otpServices } from '../otp/otp.service';
 import { User } from './user.models';
-import { UploadedFiles } from '../../interface/common.interface';
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
-  if (req.files) {
-    const { profile } = req.files as UploadedFiles;
-    if (profile) {
-      req.body.profile = await uploadToS3({
-        file: req.file,
-        fileName: `images/user/profile/${Math.floor(100000 + Math.random() * 900000)}`,
-      });
-    }
+  if (req.file) {
+    req.body.profile = await uploadToS3({
+      file: req.file,
+      fileName: `images/user/profile/${Math.floor(100000 + Math.random() * 900000)}`,
+    });
   }
   const result = await userService.createUser(req.body);
   const sendOtp = await otpServices.resendOtp(result?.email);

@@ -3,7 +3,6 @@ import catchAsync from '../../utils/catchAsync';
 import { requestsService } from './requests.service';
 import sendResponse from '../../utils/sendResponse';
 import { uploadToS3 } from '../../utils/s3';
-import { UploadedFiles } from '../../interface/common.interface';
 
 const createRequests = catchAsync(async (req: Request, res: Response) => {
   if (req.file) {

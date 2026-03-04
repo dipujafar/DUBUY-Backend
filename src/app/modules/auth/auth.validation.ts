@@ -1,15 +1,24 @@
 import { z } from 'zod';
 import { Role, USER_ROLE } from '../user/user.constants';
 
-const loginZodValidationSchema = z.object({
-  body: z.object({
-    phoneNumber: z.string({
-      required_error: 'Phone number is required!',
+export const loginZodValidationSchema = z.object({
+  body: z
+    .object({
+      phoneNumber: z.string().optional(),
+      email: z.string().email('Invalid email format!').optional(),
+      password: z.string({
+        required_error: 'Password is required!',
+      }),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.phoneNumber && !data.email) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Either phone number or email is required!',
+          path: ['phoneNumber'],
+        });
+      }
     }),
-    password: z.string({
-      required_error: 'Password is required!',
-    }),
-  }),
 });
 
 const refreshTokenValidationSchema = z.object({

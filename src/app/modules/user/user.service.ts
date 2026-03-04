@@ -5,8 +5,7 @@ import AppError from '../../error/AppError';
 import { IUser } from './user.interface';
 import { User } from './user.models';
 import QueryBuilder from '../../class/builder/QueryBuilder';
-import bcrypt from 'bcrypt';
-import config from '../../config';
+import { checkUserExit } from './user.utils';
 
 export type IFilter = {
   searchTerm?: string;
@@ -14,26 +13,10 @@ export type IFilter = {
   [key: string]: any;
 };
 const createUser = async (payload: IUser): Promise<IUser> => {
-  const isExist = await User.isUserExist(payload.phoneNumber as string);
+  const exitUser = await checkUserExit(payload);
 
-  if (isExist && !isExist?.verification?.status) {
-    const { phoneNumber, ...updateData } = payload;
-    updateData.password = await bcrypt.hash(
-      payload?.password,
-      Number(config.bcrypt_salt_rounds),
-    );
-    const user = await User.findByIdAndUpdate(isExist?._id, updateData, {
-      new: true,
-    });
-    if (!user) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'user creation failed');
-    }
-    return user;
-  } else if (isExist && isExist?.verification?.status) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      'User already exists with this phone number',
-    );
+  if (exitUser) {
+    return exitUser;
   }
 
   if (payload?.isGoogleLogin) {
