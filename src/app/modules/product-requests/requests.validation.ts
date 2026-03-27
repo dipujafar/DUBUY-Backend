@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { shippingStatus, statusEnum } from './requests.constants';
+import { statusEnum } from './requests.constants';
 
 export const additionalNotesSchema = z.object({
   productIsFragile: z.boolean().optional(),
@@ -49,10 +49,6 @@ export const requestSchema = z.object({
       .min(1, 'Delivery address is required'),
 
     status: z.enum([...statusEnum] as [string, ...string[]]).default('pending'),
-
-    shippingStatus: z
-      .enum([...shippingStatus] as [string, ...string[]])
-      .default('pending'),
   }),
 });
 
@@ -76,11 +72,6 @@ export const updateRequestSchema = z.object({
       address: z.string().min(1, 'Delivery address is required').optional(),
       status: z
         .enum([...statusEnum] as [string, ...string[]])
-        .default('pending')
-        .optional(),
-
-      shippingStatus: z
-        .enum([...shippingStatus] as [string, ...string[]])
         .default('pending')
         .optional(),
 

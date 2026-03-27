@@ -4,8 +4,9 @@ import {
   AdditionalNotes,
   RequestModel,
   IArrivedImages,
+  IShippingStep,
 } from './requests.interface';
-import { shippingStatus, statusEnum } from './requests.constants';
+import { SHIPPING_STEPS, statusEnum } from './requests.constants';
 
 const additionalNotesSchema = new Schema<AdditionalNotes>({
   productIsFragile: { type: 'boolean', required: false },
@@ -22,8 +23,24 @@ const arrivedSchema = new Schema<IArrivedImages>({
   }, // URL validation
 });
 
+const shippingStepSchema = new Schema<IShippingStep>({
+  status: {
+    type: String,
+    enum: SHIPPING_STEPS,
+    required: true,
+  },
+  isComplete: {
+    type: Boolean,
+    default: false,
+  },
+  updatedAt: {
+    type: Date,
+  },
+});
+
 const requestsSchema = new Schema<IRequests>(
   {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     image: { type: 'string', required: true },
     link: { type: 'string', required: true },
     title: { type: 'string', required: true },
@@ -45,14 +62,21 @@ const requestsSchema = new Schema<IRequests>(
       default: 'pending',
     },
     shippingStatus: {
-      type: 'string',
-      enum: {
-        values: shippingStatus,
-        message:
-          '{VALUE} is not a valid status. Accepted values: pending, accepted, rejected, delivered',
-      },
+      type: [shippingStepSchema],
       required: true,
+      default: () =>
+        SHIPPING_STEPS.map(step => ({
+          status: step,
+          isComplete: step === 'pending',
+          updatedAt: step === 'pending' ? new Date() : undefined,
+        })),
+    },
+
+    displayStatus: {
+      type: String,
+      enum: SHIPPING_STEPS,
       default: 'pending',
+      required: true,
     },
     arrivedImages: [arrivedSchema],
     isDeleted: { type: 'boolean', default: false },

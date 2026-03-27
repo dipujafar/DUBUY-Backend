@@ -30,7 +30,7 @@ const auth = (...userRoles: string[]) => {
     if (userRoles && !userRoles.includes(role)) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized');
     }
-    
+
     req.user = decode;
     next();
   });

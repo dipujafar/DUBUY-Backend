@@ -5,6 +5,7 @@ import sendResponse from '../../utils/sendResponse';
 import { uploadToS3 } from '../../utils/s3';
 
 const createRequests = catchAsync(async (req: Request, res: Response) => {
+  req.body.user = req.user.userId;
   if (req.file) {
     req.body.image = await uploadToS3({
       file: req.file,
@@ -40,6 +41,20 @@ const getRequestsById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
+const getMyOderRequests = catchAsync(async (req: Request, res: Response) => {
+  const result = await requestsService.getMyOrderRequests(
+    req.query,
+    req.user.userId,
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'My product order requests fetched successfully',
+    data: result,
+  });
+});
+
 const updateRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.updateRequests(req.params.id, req.body);
   sendResponse(res, {
@@ -64,6 +79,7 @@ export const requestsController = {
   createRequests,
   getAllRequests,
   getRequestsById,
+  getMyOderRequests,
   updateRequests,
   deleteRequests,
 };

@@ -1,4 +1,5 @@
-import { Model } from 'mongoose';
+import { Model, ObjectId } from 'mongoose';
+import { SHIPPING_STEPS } from './requests.constants';
 
 export interface AdditionalNotes {
   productIsFragile: boolean;
@@ -11,7 +12,16 @@ export interface IArrivedImages {
   url: string;
 }
 
+export type ShippingStatusType = (typeof SHIPPING_STEPS)[number];
+
+export interface IShippingStep {
+  status: ShippingStatusType;
+  isComplete: boolean;
+  updatedAt?: Date;
+}
+
 export interface IRequests {
+  user: ObjectId;
   image: string;
   link: string;
   title: string;
@@ -23,16 +33,8 @@ export interface IRequests {
   additionalNotes: AdditionalNotes;
   address: string;
   status: 'pending' | 'accepted' | 'rejected' | 'delivered';
-  shippingStatus:
-    | 'pending'
-    | 'payment_receive'
-    | 'purchased_in_UAE'
-    | 'in_warehouse'
-    | 'shipped_to_libya'
-    | 'in_warehouse'
-    | 'arrived_item_image'
-    | 'ready_to_collect'
-    | 'delivered';
+  shippingStatus: IShippingStep[];
+  displayStatus: ShippingStatusType;
   arrivedImages?: IArrivedImages[];
   isDeleted: boolean;
 }

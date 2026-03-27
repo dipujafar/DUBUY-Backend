@@ -13,7 +13,6 @@ export const checkUserExit = async (payload: IUser) => {
     payload.email as string,
   );
 
-
   if (isExist?.phoneExists && !isExist?.user?.verification?.status) {
     const { phoneNumber, ...updateData } = payload;
     updateData.password = await bcrypt.hash(
@@ -40,15 +39,15 @@ export const checkUserExit = async (payload: IUser) => {
       throw new AppError(httpStatus.BAD_REQUEST, 'user creation failed');
     }
     return user;
-  } else if (isExist?.phoneExists && isExist?.user?.verification?.status) {
-    throw new AppError(
-      httpStatus.FORBIDDEN,
-      'User already exists with this phone number',
-    );
   } else if (isExist?.emailExists && isExist?.user?.verification?.status) {
     throw new AppError(
       httpStatus.FORBIDDEN,
       'User already exists with this email',
+    );
+  } else if (isExist?.phoneExists && isExist?.user?.verification?.status) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'User already exists with this phone number',
     );
   }
 };

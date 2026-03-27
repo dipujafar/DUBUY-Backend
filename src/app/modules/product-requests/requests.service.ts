@@ -38,6 +38,31 @@ const getRequestsById = async (id: string) => {
   return result;
 };
 
+const getMyOrderRequests = async (
+  query: Record<string, any>,
+  userId: string,
+) => {
+  query['isDeleted'] = false;
+  query['user'] = userId;
+  const requestsModel = new QueryBuilder(
+    Requests.find().populate('user'),
+    query,
+  )
+    .search([])
+    .filter()
+    .paginate()
+    .sort()
+    .fields();
+
+  const data = await requestsModel.modelQuery;
+  const meta = await requestsModel.countTotal();
+
+  return {
+    data,
+    meta,
+  };
+};
+
 const updateRequests = async (id: string, payload: Partial<IRequests>) => {
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
@@ -64,6 +89,7 @@ const deleteRequests = async (id: string) => {
 
 export const requestsService = {
   createRequests,
+  getMyOrderRequests,
   getAllRequests,
   getRequestsById,
   updateRequests,

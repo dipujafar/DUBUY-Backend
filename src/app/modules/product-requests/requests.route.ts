@@ -12,6 +12,7 @@ const upload = multer({ storage: memoryStorage() });
 
 router.post(
   '/',
+  auth(USER_ROLE.user),
   upload.single('image'),
   parseData(),
   validateRequest(requestValidation.requestSchema),
@@ -25,7 +26,19 @@ router.patch(
   requestsController.updateRequests,
 );
 router.delete('/:id', auth(USER_ROLE.admin), requestsController.deleteRequests);
-router.get('/:id', auth(USER_ROLE.admin), requestsController.getRequestsById);
+
 router.get('/', auth(USER_ROLE.admin), requestsController.getAllRequests);
+
+router.get(
+  '/details/:id',
+  auth(USER_ROLE.admin, USER_ROLE.user),
+  requestsController.getRequestsById,
+);
+
+router.get(
+  '/my-orders',
+  auth(USER_ROLE.user),
+  requestsController.getMyOderRequests,
+);
 
 export const requestsRoutes = router;
