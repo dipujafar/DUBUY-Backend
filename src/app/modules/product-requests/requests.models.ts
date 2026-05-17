@@ -5,7 +5,11 @@ import {
   IArrivedImages,
   IShippingStep,
 } from './requests.interface';
-import { SHIPPING_STEPS, statusEnum } from './requests.constants';
+import {
+  DISPLAY_STATUS,
+  SHIPPING_STEPS,
+  statusEnum,
+} from './requests.constants';
 
 const arrivedSchema = new Schema<IArrivedImages>({
   key: { type: 'string', required: [true, 'Image key is required'] },
@@ -34,15 +38,14 @@ const shippingStepSchema = new Schema<IShippingStep>({
 const requestsSchema = new Schema<IRequests>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    image: { type: 'string', required: true, default: null },
+    image: { type: 'string', default: null },
     productLink: { type: 'string', required: true },
-    title: { type: 'string', required: true, default: null },
-    price: { type: 'number', required: true, default: null },
-    couponCode: { type: 'string', required: false, default: null },
-    size: { type: 'string', required: true, default: null },
-    color: { type: 'string', required: true, default: null },
-    quantity: { type: 'number', required: true, default: null },
-    address: { type: 'string', required: true, default: null },
+    title: { type: 'string', default: null },
+    price: { type: 'number', default: null },
+    couponCode: { type: 'string', default: null },
+    size: { type: 'string', default: null },
+    color: { type: 'string', default: null },
+    quantity: { type: 'number', default: null },
     status: {
       type: 'string',
       enum: {
@@ -66,8 +69,8 @@ const requestsSchema = new Schema<IRequests>(
 
     displayStatus: {
       type: String,
-      enum: SHIPPING_STEPS,
-      default: 'pending',
+      enum: DISPLAY_STATUS,
+      default: 'Requested',
       required: true,
     },
     arrivedImages: [arrivedSchema],
@@ -77,6 +80,9 @@ const requestsSchema = new Schema<IRequests>(
     timestamps: true,
   },
 );
+
+
+
 
 requestsSchema.pre('find', function (next) {
   this.where({ isDeleted: false });

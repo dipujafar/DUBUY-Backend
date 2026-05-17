@@ -31,7 +31,7 @@ const moduleRoutes = [
     route: contentsRoutes,
   },
   {
-    path: '/products',
+    path: '/products-requests',
     route: requestsRoutes,
   },
   {

@@ -12,6 +12,20 @@ const createRequests = async (payload: IRequests) => {
   return result;
 };
 
+// ------------------------------------------ update the product for resend quotation ------------------------------------------
+const updateRequestsForResendQuotation = async (
+  id: string,
+  payload: Partial<IRequests>,
+) => {
+  console.log(payload);
+  const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
+  if (!result) {
+    throw new Error('Failed to update Requests');
+  }
+  return result;
+};
+
+// ------------------------------------------ get all requests ------------------------------------------
 const getAllRequests = async (query: Record<string, any>) => {
   query['isDeleted'] = false;
   const requestsModel = new QueryBuilder(Requests.find(), query)
@@ -30,6 +44,7 @@ const getAllRequests = async (query: Record<string, any>) => {
   };
 };
 
+// ------------------------------------------ get requests by id ------------------------------------------
 const getRequestsById = async (id: string) => {
   const result = await Requests.findById(id);
   if (!result || result?.isDeleted) {
@@ -38,6 +53,7 @@ const getRequestsById = async (id: string) => {
   return result;
 };
 
+// ------------------------------------------ get my order requests ------------------------------------------
 const getMyOrderRequests = async (
   query: Record<string, any>,
   userId: string,
@@ -63,6 +79,7 @@ const getMyOrderRequests = async (
   };
 };
 
+// ------------------------------------------ update requests ------------------------------------------
 const updateRequests = async (id: string, payload: Partial<IRequests>) => {
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
@@ -71,6 +88,7 @@ const updateRequests = async (id: string, payload: Partial<IRequests>) => {
   return result;
 };
 
+// ------------------------------------------ delete requests ------------------------------------------
 const deleteRequests = async (id: string) => {
   const isDeleted = await Requests.isRequestsDeleted(id);
   if (isDeleted) {
@@ -89,6 +107,7 @@ const deleteRequests = async (id: string) => {
 
 export const requestsService = {
   createRequests,
+  updateRequestsForResendQuotation,
   getMyOrderRequests,
   getAllRequests,
   getRequestsById,

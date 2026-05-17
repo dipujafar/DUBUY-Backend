@@ -5,9 +5,17 @@ export const statusEnum = [
   'rejected',
   'delivered',
 ];
+export const DISPLAY_STATUS = [
+  'Requested',
+  'Received Quotation',
+  'On Progress',
+  'In Transit',
+  'In Warehouse',
+  'Ready To Collect',
+  'Completed',
+];
 
 export const SHIPPING_STEPS = [
-  'request',
   'pending',
   'payment_receive',
   'purchased_in_UAE',

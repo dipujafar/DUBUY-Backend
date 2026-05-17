@@ -4,15 +4,9 @@ import { requestsService } from './requests.service';
 import sendResponse from '../../utils/sendResponse';
 import { uploadToS3 } from '../../utils/s3';
 
+// --------------------------------------------- create product request ------------------------------------------------
 const createRequests = catchAsync(async (req: Request, res: Response) => {
   req.body.user = req.user.userId;
-  if (req.file) {
-    req.body.image = await uploadToS3({
-      file: req.file,
-      fileName: `product/image/${Math.floor(100000 + Math.random() * 900000)}`,
-    });
-  }
-
   const result = await requestsService.createRequests(req.body);
   sendResponse(res, {
     statusCode: 201,
@@ -22,6 +16,32 @@ const createRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- update product request for resend quotation ------------------------------------------------
+
+const updateRequestForResendQuotation = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    if (req.file) {
+      req.body.image = await uploadToS3({
+        file: req.file,
+        fileName: `product/image/${Math.floor(100000 + Math.random() * 900000)}`,
+      });
+    }
+
+    const result = await requestsService.updateRequestsForResendQuotation(
+      id,
+      req.body,
+    );
+    sendResponse(res, {
+      statusCode: 201,
+      success: true,
+      message: 'Send quotation successfully for this request',
+      data: result,
+    });
+  },
+);
+
+// --------------------------------------------- get all product requests ------------------------------------------------
 const getAllRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.getAllRequests(req.query);
   sendResponse(res, {
@@ -42,6 +62,7 @@ const getRequestsById = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- get my product requests ------------------------------------------------
 const getMyOderRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.getMyOrderRequests(
     req.query,
@@ -55,6 +76,7 @@ const getMyOderRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- update product request ------------------------------------------------
 const updateRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.updateRequests(req.params.id, req.body);
   sendResponse(res, {
@@ -65,6 +87,7 @@ const updateRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- delete product request ------------------------------------------------
 const deleteRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.deleteRequests(req.params.id);
   sendResponse(res, {
@@ -77,6 +100,7 @@ const deleteRequests = catchAsync(async (req: Request, res: Response) => {
 
 export const requestsController = {
   createRequests,
+  updateRequestForResendQuotation,
   getAllRequests,
   getRequestsById,
   getMyOderRequests,

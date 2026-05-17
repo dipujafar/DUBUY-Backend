@@ -13,10 +13,17 @@ const upload = multer({ storage: memoryStorage() });
 router.post(
   '/',
   auth(USER_ROLE.user),
-  upload.single('image'),
-  parseData(),
   validateRequest(requestValidation.requestSchema),
   requestsController.createRequests,
+);
+
+router.patch(
+  '/resend-quotation/:id',
+  auth(USER_ROLE.admin),
+  upload.single('image'),
+  parseData(),
+  validateRequest(requestValidation.reSendQuotationSchema),
+  requestsController.updateRequestForResendQuotation,
 );
 
 router.patch(
