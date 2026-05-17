@@ -9,7 +9,7 @@ export const additionalNotesSchema = z.object({
 
 export const requestSchema = z.object({
   body: z.object({
-    link: z
+    productLink: z
       .string({ required_error: 'Product link is required' })
       .url('Product link must be a valid URL'),
 
@@ -55,7 +55,10 @@ export const requestSchema = z.object({
 export const updateRequestSchema = z.object({
   body: z
     .object({
-      link: z.string().url('Product link must be a valid URL').optional(),
+      productLink: z
+        .string()
+        .url('Product link must be a valid URL')
+        .optional(),
       title: z.string().min(1, 'Product title is required').optional(),
       price: z
         .number()

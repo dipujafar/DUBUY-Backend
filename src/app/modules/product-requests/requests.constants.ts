@@ -1,6 +1,13 @@
-export const statusEnum = ['pending', 'accepted', 'rejected', 'delivered'];
+export const statusEnum = [
+  'request',
+  'pending',
+  'accepted',
+  'rejected',
+  'delivered',
+];
 
 export const SHIPPING_STEPS = [
+  'request',
   'pending',
   'payment_receive',
   'purchased_in_UAE',

@@ -1,18 +1,11 @@
 import { model, Schema } from 'mongoose';
 import {
   IRequests,
-  AdditionalNotes,
   RequestModel,
   IArrivedImages,
   IShippingStep,
 } from './requests.interface';
 import { SHIPPING_STEPS, statusEnum } from './requests.constants';
-
-const additionalNotesSchema = new Schema<AdditionalNotes>({
-  productIsFragile: { type: 'boolean', required: false },
-  requiresExtraCare: { type: 'boolean', required: false },
-  urgentDelivery: { type: 'boolean', required: false },
-});
 
 const arrivedSchema = new Schema<IArrivedImages>({
   key: { type: 'string', required: [true, 'Image key is required'] },
@@ -41,16 +34,15 @@ const shippingStepSchema = new Schema<IShippingStep>({
 const requestsSchema = new Schema<IRequests>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    image: { type: 'string', required: true },
-    link: { type: 'string', required: true },
-    title: { type: 'string', required: true },
-    price: { type: 'number', required: true },
-    couponCode: { type: 'string', required: false },
-    size: { type: 'string', required: true },
-    color: { type: 'string', required: true },
-    quantity: { type: 'number', required: true },
-    additionalNotes: additionalNotesSchema,
-    address: { type: 'string', required: true },
+    image: { type: 'string', required: true, default: null },
+    productLink: { type: 'string', required: true },
+    title: { type: 'string', required: true, default: null },
+    price: { type: 'number', required: true, default: null },
+    couponCode: { type: 'string', required: false, default: null },
+    size: { type: 'string', required: true, default: null },
+    color: { type: 'string', required: true, default: null },
+    quantity: { type: 'number', required: true, default: null },
+    address: { type: 'string', required: true, default: null },
     status: {
       type: 'string',
       enum: {
@@ -59,7 +51,7 @@ const requestsSchema = new Schema<IRequests>(
           '{VALUE} is not a valid status. Accepted values: pending, accepted, rejected, delivered',
       },
       required: true,
-      default: 'pending',
+      default: 'request',
     },
     shippingStatus: {
       type: [shippingStepSchema],
@@ -86,27 +78,20 @@ const requestsSchema = new Schema<IRequests>(
   },
 );
 
-//requestsSchema.pre('find', function (next) {
-//  //@ts-ignore
-//  this.find({ isDeleted: { $ne: true } });
-//  next();
-//});
+requestsSchema.pre('find', function (next) {
+  this.where({ isDeleted: false });
+  next();
+});
 
-//requestsSchema.pre('findOne', function (next) {
-//@ts-ignore
-//this.find({ isDeleted: { $ne: true } });
-// next();
-//});
+requestsSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { isDeleted: false } });
+  next();
+});
 
 requestsSchema.statics.isRequestsDeleted = async function (id: string) {
   const result = await Requests.findById(id);
   return result?.isDeleted;
 };
-
-requestsSchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
-  next();
-});
 
 const Requests = model<IRequests, RequestModel>('Requests', requestsSchema);
 export default Requests;

@@ -1,12 +1,6 @@
 import { Model, ObjectId } from 'mongoose';
 import { SHIPPING_STEPS } from './requests.constants';
 
-export interface AdditionalNotes {
-  productIsFragile: boolean;
-  requiresExtraCare: boolean;
-  urgentDelivery: boolean;
-}
-
 export interface IArrivedImages {
   key: string;
   url: string;
@@ -23,16 +17,15 @@ export interface IShippingStep {
 export interface IRequests {
   user: ObjectId;
   image: string;
-  link: string;
+  productLink: string;
   title: string;
   price: number;
   couponCode?: string;
   size: string;
   color: string;
   quantity: number;
-  additionalNotes: AdditionalNotes;
   address: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'delivered';
+  status: 'request' | 'pending' | 'accepted' | 'rejected' | 'delivered';
   shippingStatus: IShippingStep[];
   displayStatus: ShippingStatusType;
   arrivedImages?: IArrivedImages[];
