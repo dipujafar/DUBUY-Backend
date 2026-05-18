@@ -37,15 +37,20 @@ router.delete('/:id', auth(USER_ROLE.admin), requestsController.deleteRequests);
 router.get('/', auth(USER_ROLE.admin), requestsController.getAllRequests);
 
 router.get(
-  '/details/:id',
-  auth(USER_ROLE.admin, USER_ROLE.user),
-  requestsController.getRequestsById,
+  '/my-requests',
+  auth(USER_ROLE.user),
+  requestsController.getMyProductRequests,
+);
+router.get(
+  '/received-quotations',
+  auth(USER_ROLE.user),
+  requestsController.getMyReceivedQuotations,
 );
 
 router.get(
-  '/my-orders',
-  auth(USER_ROLE.user),
-  requestsController.getMyOderRequests,
+  '/:id',
+  auth(USER_ROLE.admin, USER_ROLE.user),
+  requestsController.getRequestsById,
 );
 
 export const requestsRoutes = router;

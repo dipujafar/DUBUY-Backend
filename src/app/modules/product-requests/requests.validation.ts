@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { statusEnum } from './requests.constants';
+import { status, statusEnum } from './requests.constants';
 
 export const requestSchema = z.object({
   body: z.object({
@@ -41,8 +41,6 @@ export const reSendQuotationSchema = z.object({
       })
       .int('Quantity must be an integer')
       .positive('Quantity must be greater than 0'),
-
-    status: z.enum([...statusEnum] as [string, ...string[]]).default('pending'),
   }),
 });
 
@@ -65,10 +63,6 @@ export const updateRequestSchema = z.object({
         .number()
         .int()
         .positive('Quantity must be greater than 0')
-        .optional(),
-      status: z
-        .enum([...statusEnum] as [string, ...string[]])
-        .default('pending')
         .optional(),
     })
     .partial(),

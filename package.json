@@ -16,7 +16,7 @@
     "start:prod": "node ./dist/server.js",
     "prepare": "husky"
   },
-  "author": "MD Nazmul Hasan",
+  "author": "Jafar Uddin Dipu",
   "license": "ISC",
   "description": "",
   "lint-staged": {

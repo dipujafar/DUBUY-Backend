@@ -7,7 +7,10 @@ import {
 } from './requests.interface';
 import {
   DISPLAY_STATUS,
+  displayStatus,
   SHIPPING_STEPS,
+  shippingSteps,
+  status,
   statusEnum,
 } from './requests.constants';
 
@@ -23,7 +26,12 @@ const arrivedSchema = new Schema<IArrivedImages>({
 const shippingStepSchema = new Schema<IShippingStep>({
   status: {
     type: String,
-    enum: SHIPPING_STEPS,
+    enum: {
+      values: SHIPPING_STEPS,
+      message: `{VALUE} is not a valid status. Accepted values: ${SHIPPING_STEPS.join(
+        ', ',
+      )}`,
+    },
     required: true,
   },
   isComplete: {
@@ -50,11 +58,10 @@ const requestsSchema = new Schema<IRequests>(
       type: 'string',
       enum: {
         values: statusEnum,
-        message:
-          '{VALUE} is not a valid status. Accepted values: pending, accepted, rejected, delivered',
+        message: `{VALUE} is not a valid status. Accepted values: ${statusEnum.join(', ')}`,
       },
       required: true,
-      default: 'request',
+      default: status.request,
     },
     shippingStatus: {
       type: [shippingStepSchema],
@@ -62,15 +69,18 @@ const requestsSchema = new Schema<IRequests>(
       default: () =>
         SHIPPING_STEPS.map(step => ({
           status: step,
-          isComplete: step === 'pending',
-          updatedAt: step === 'pending' ? new Date() : undefined,
+          isComplete: step === shippingSteps.pending,
+          updatedAt: step === shippingSteps.pending ? new Date() : undefined,
         })),
     },
 
     displayStatus: {
       type: String,
-      enum: DISPLAY_STATUS,
-      default: 'Requested',
+      enum: {
+        values: DISPLAY_STATUS,
+        message: `{VALUE} is not a valid status. Accepted values: ${DISPLAY_STATUS.join(', ')}`,
+      },
+      default: displayStatus.requested,
       required: true,
     },
     arrivedImages: [arrivedSchema],
@@ -80,9 +90,6 @@ const requestsSchema = new Schema<IRequests>(
     timestamps: true,
   },
 );
-
-
-
 
 requestsSchema.pre('find', function (next) {
   this.where({ isDeleted: false });

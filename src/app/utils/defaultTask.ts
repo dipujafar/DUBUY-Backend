@@ -9,7 +9,7 @@ export async function defaultTask() {
   const admin = await User.findOne({ role: USER_ROLE?.admin });
   if (!admin) {
     await User.create({
-      name: 'MD Nazmul Hasan',
+      name: 'Mr. Admin',
       email: 'admin@gmail.com',
       phoneNumber: '+8801321834780',
       password: '112233',

@@ -12,7 +12,10 @@ const createRequests = catchAsync(async (req: Request, res: Response) => {
     statusCode: 201,
     success: true,
     message: 'Requests sent successfully',
-    data: result,
+    data: {
+      _id: result?._id,
+      productLink: result?.productLink,
+    },
   });
 });
 
@@ -63,8 +66,8 @@ const getRequestsById = catchAsync(async (req: Request, res: Response) => {
 });
 
 // --------------------------------------------- get my product requests ------------------------------------------------
-const getMyOderRequests = catchAsync(async (req: Request, res: Response) => {
-  const result = await requestsService.getMyOrderRequests(
+const getMyProductRequests = catchAsync(async (req: Request, res: Response) => {
+  const result = await requestsService.getMyProductRequests(
     req.query,
     req.user.userId,
   );
@@ -75,10 +78,25 @@ const getMyOderRequests = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+// --------------------------------------------- get my received quotations ------------------------------------------------
+const getMyReceivedQuotations = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await requestsService.getMyReceivedQuotation(
+      req.query,
+      req.user.userId,
+    );
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: 'My product order requests fetched successfully',
+      data: result,
+    });
+  },
+);
 
 // --------------------------------------------- update product request ------------------------------------------------
 const updateRequests = catchAsync(async (req: Request, res: Response) => {
-  const result = await requestsService.updateRequests(req.params.id, req.body);
+  const result = await requestsService.updateRequest(req.params.id, req.body);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -101,9 +119,10 @@ const deleteRequests = catchAsync(async (req: Request, res: Response) => {
 export const requestsController = {
   createRequests,
   updateRequestForResendQuotation,
+  getMyReceivedQuotations,
   getAllRequests,
   getRequestsById,
-  getMyOderRequests,
+  getMyProductRequests,
   updateRequests,
   deleteRequests,
 };

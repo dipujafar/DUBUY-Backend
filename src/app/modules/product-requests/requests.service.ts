@@ -3,6 +3,7 @@ import { IRequests } from './requests.interface';
 import Requests from './requests.models';
 import AppError from '../../error/AppError';
 import QueryBuilder from '../../class/builder/QueryBuilder';
+import { displayStatus, status } from './requests.constants';
 
 const createRequests = async (payload: IRequests) => {
   const result = await Requests.create(payload);
@@ -17,7 +18,8 @@ const updateRequestsForResendQuotation = async (
   id: string,
   payload: Partial<IRequests>,
 ) => {
-  console.log(payload);
+  payload['status'] = status.quotation;
+  payload['displayStatus'] = displayStatus.received_quotation;
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
     throw new Error('Failed to update Requests');
@@ -27,7 +29,6 @@ const updateRequestsForResendQuotation = async (
 
 // ------------------------------------------ get all requests ------------------------------------------
 const getAllRequests = async (query: Record<string, any>) => {
-  query['isDeleted'] = false;
   const requestsModel = new QueryBuilder(Requests.find(), query)
     .search([])
     .filter()
@@ -53,13 +54,41 @@ const getRequestsById = async (id: string) => {
   return result;
 };
 
-// ------------------------------------------ get my order requests ------------------------------------------
-const getMyOrderRequests = async (
+// ------------------------------------------ get my product requests ------------------------------------------
+const getMyProductRequests = async (
   query: Record<string, any>,
   userId: string,
 ) => {
-  query['isDeleted'] = false;
   query['user'] = userId;
+  query['status'] = status.request;
+  query['fields'] =
+    query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
+
+  const requestsModel = new QueryBuilder(Requests.find(), query)
+    .search([])
+    .filter()
+    .paginate()
+    .sort()
+    .fields();
+
+  const data = await requestsModel.modelQuery;
+  const meta = await requestsModel.countTotal();
+
+  return {
+    data,
+    meta,
+  };
+};
+
+// ------------------------------------------ get quotation received ------------------------------------------
+const getMyReceivedQuotation = async (
+  query: Record<string, any>,
+  userId: string,
+) => {
+  query['user'] = userId;
+  query['status'] = status.quotation;
+  query['fields'] =
+    query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
   const requestsModel = new QueryBuilder(
     Requests.find().populate('user'),
     query,
@@ -80,7 +109,7 @@ const getMyOrderRequests = async (
 };
 
 // ------------------------------------------ update requests ------------------------------------------
-const updateRequests = async (id: string, payload: Partial<IRequests>) => {
+const updateRequest = async (id: string, payload: Partial<IRequests>) => {
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
     throw new Error('Failed to update Requests');
@@ -108,9 +137,10 @@ const deleteRequests = async (id: string) => {
 export const requestsService = {
   createRequests,
   updateRequestsForResendQuotation,
-  getMyOrderRequests,
+  getMyReceivedQuotation,
+  getMyProductRequests,
   getAllRequests,
   getRequestsById,
-  updateRequests,
+  updateRequest,
   deleteRequests,
 };

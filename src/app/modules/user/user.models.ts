@@ -160,7 +160,7 @@ const userSchema: Schema<IUser> = new Schema(
   },
 );
 
-userSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
+// userSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 userSchema.pre('save', async function (next) {
   const user = this;

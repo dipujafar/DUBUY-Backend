@@ -1,12 +1,13 @@
 import { Model, ObjectId } from 'mongoose';
-import { DISPLAY_STATUS } from './requests.constants';
+import { DISPLAY_STATUS, SHIPPING_STEPS, status } from './requests.constants';
 
 export interface IArrivedImages {
   key: string;
   url: string;
 }
 
-export type ShippingStatusType = (typeof DISPLAY_STATUS)[number];
+export type ShippingStatusType = (typeof SHIPPING_STEPS)[number];
+export type DisplayStatus = (typeof DISPLAY_STATUS)[number];
 
 export interface IShippingStep {
   status: ShippingStatusType;
@@ -24,9 +25,9 @@ export interface IRequests {
   size: string;
   color: string;
   quantity: number;
-  status: 'request' | 'pending' | 'accepted' | 'rejected' | 'delivered';
+  status: keyof typeof status;
   shippingStatus: IShippingStep[];
-  displayStatus: ShippingStatusType;
+  displayStatus: DisplayStatus;
   arrivedImages?: IArrivedImages[];
   isDeleted: boolean;
 }
