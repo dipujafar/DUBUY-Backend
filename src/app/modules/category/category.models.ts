@@ -46,5 +46,15 @@ categorySchema.statics.isExistByName = async function (name: string) {
   return await Category.findOne({ name });
 };
 
+categorySchema.pre('find', function (next) {
+  this.where({ isDeleted: false });
+  next();
+});
+
+categorySchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { isDeleted: false } });
+  next();
+});
+
 const Category = model<ICategory, ICategoryModel>('Categories', categorySchema);
 export default Category;

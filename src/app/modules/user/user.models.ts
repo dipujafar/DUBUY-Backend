@@ -257,4 +257,14 @@ userSchema.post('findOneAndUpdate', function (doc, next) {
   next();
 });
 
+userSchema.pre('find', function (next) {
+  this.where({ isDeleted: false });
+  next();
+});
+
+userSchema.pre('aggregate', function (next) {
+  this.pipeline().unshift({ $match: { isDeleted: false } });
+  next();
+});
+
 export const User = model<IUser, UserModel>('User', userSchema);

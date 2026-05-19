@@ -7,10 +7,8 @@ import AppError from '../../error/AppError';
 
 const createCategory = async (payload: ICategory) => {
   const category = await Category.isExistByName(payload?.name);
-  if (category && category?.isDeleted) {
-    return await Category.findByIdAndUpdate(category?._id, payload, {
-      new: true,
-    });
+  if (category && !category?.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Category already exist');
   }
 
   const result = await Category.create(payload);

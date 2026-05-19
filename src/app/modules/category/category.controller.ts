@@ -72,6 +72,7 @@ const updateCategory = catchAsync(async (req: Request, res: Response) => {
       fileName: `category/icon/${Math.floor(100000 + Math.random() * 900000)}`,
     });
   }
+  console.log('category');
   const result = await categoryService.updateCategory(req.params.id, req.body);
   sendResponse(res, {
     statusCode: 200,
