@@ -11,7 +11,7 @@ export const WebsiteLinkSchema = z.object({
     .min(1, 'SubTitle is required')
     .max(150, 'SubTitle must be less than 150 characters'),
 
-  link: z.string().url('Must be a valid URL'),
+  link: z.string().url('Website link must be a valid URL'),
 });
 
 export const createCategorySchema = z.object({

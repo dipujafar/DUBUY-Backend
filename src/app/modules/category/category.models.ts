@@ -1,5 +1,6 @@
 import { model, Schema } from 'mongoose';
 import { ICategory, ICategoryModel, IWebsiteLink } from './category.interface';
+import { string } from 'zod';
 
 const websiteLinkSchema = new Schema<IWebsiteLink>({
   title: {
@@ -21,10 +22,11 @@ const categorySchema = new Schema<ICategory>(
     },
     image: {
       type: String,
+      required: [true, 'Image is required'],
     },
     icon: {
       type: String,
-      required: false,
+      required: [true, 'Icon is required'],
     },
     description: {
       type: String,
