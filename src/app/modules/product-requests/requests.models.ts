@@ -1,15 +1,8 @@
 import { model, Schema } from 'mongoose';
-import {
-  IRequests,
-  RequestModel,
-  IArrivedImages,
-  IShippingStep,
-} from './requests.interface';
+import { IRequests, RequestModel, IArrivedImages } from './requests.interface';
 import {
   DISPLAY_STATUS,
   displayStatus,
-  SHIPPING_STEPS,
-  shippingSteps,
   status,
   statusEnum,
 } from './requests.constants';
@@ -23,26 +16,6 @@ const arrivedSchema = new Schema<IArrivedImages>({
   }, // URL validation
 });
 
-const shippingStepSchema = new Schema<IShippingStep>({
-  status: {
-    type: String,
-    enum: {
-      values: SHIPPING_STEPS,
-      message: `{VALUE} is not a valid status. Accepted values: ${SHIPPING_STEPS.join(
-        ', ',
-      )}`,
-    },
-    required: true,
-  },
-  isComplete: {
-    type: Boolean,
-    default: false,
-  },
-  updatedAt: {
-    type: Date,
-  },
-});
-
 const requestsSchema = new Schema<IRequests>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -54,6 +27,8 @@ const requestsSchema = new Schema<IRequests>(
     size: { type: 'string', default: null },
     color: { type: 'string', default: null },
     quantity: { type: 'number', default: null },
+    totalPrice: { type: 'number', default: null },
+    needToPay: { type: 'number', default: null },
     status: {
       type: 'string',
       enum: {
@@ -62,16 +37,6 @@ const requestsSchema = new Schema<IRequests>(
       },
       required: true,
       default: status.request,
-    },
-    shippingStatus: {
-      type: [shippingStepSchema],
-      required: true,
-      default: () =>
-        SHIPPING_STEPS.map(step => ({
-          status: step,
-          isComplete: step === shippingSteps.pending,
-          updatedAt: step === shippingSteps.pending ? new Date() : undefined,
-        })),
     },
 
     displayStatus: {
@@ -104,6 +69,10 @@ requestsSchema.pre('aggregate', function (next) {
 requestsSchema.statics.isRequestsDeleted = async function (id: string) {
   const result = await Requests.findById(id);
   return result?.isDeleted;
+};
+
+requestsSchema.statics.isRequestExists = async function (id: string) {
+  return await Requests.findById(id);
 };
 
 const Requests = model<IRequests, RequestModel>('Requests', requestsSchema);

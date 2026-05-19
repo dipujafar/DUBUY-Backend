@@ -1,6 +1,8 @@
 export const status = {
   request: 'request',
   quotation: 'quotation',
+  payment: 'initiate_payment_request',
+  reject_payment_request: 'reject_payment_request',
   accepted: 'accepted',
   rejected: 'rejected',
   delivered: 'delivered',
@@ -9,6 +11,7 @@ export const status = {
 export const statusEnum = [
   status.request,
   status.quotation,
+  status.payment,
   status.accepted,
   status.rejected,
   status.delivered,
@@ -17,6 +20,9 @@ export const statusEnum = [
 export const displayStatus = {
   requested: 'Under Review',
   received_quotation: 'Received Quotation',
+  rejected_quotation: 'Rejected Quotation',
+  payment_request: 'Payment Request',
+  reject_payment_request: 'Reject Payment Request',
   on_progress: 'On Progress',
   in_transit: 'In Transit',
   in_warehouse: 'In Warehouse',
@@ -27,31 +33,12 @@ export const displayStatus = {
 export const DISPLAY_STATUS = [
   displayStatus.requested,
   displayStatus.received_quotation,
+  displayStatus.rejected_quotation,
+  displayStatus.payment_request,
+  displayStatus.reject_payment_request,
   displayStatus.on_progress,
   displayStatus.in_transit,
   displayStatus.in_warehouse,
   displayStatus.ready_to_collect,
   displayStatus.completed,
-] as const;
-
-export const shippingSteps = {
-  pending: 'pending',
-  payment_receive: 'payment_receive',
-  purchased_in_UAE: 'purchased_in_UAE',
-  in_warehouse: 'in_warehouse',
-  shipped_to_libya: 'shipped_to_libya',
-  arrived_item_image: 'arrived_item_image',
-  ready_to_collect: 'ready_to_collect',
-  completed: 'completed',
-} as const;
-
-export const SHIPPING_STEPS = [
-  shippingSteps.pending,
-  shippingSteps.payment_receive,
-  shippingSteps.purchased_in_UAE,
-  shippingSteps.in_warehouse,
-  shippingSteps.shipped_to_libya,
-  shippingSteps.arrived_item_image,
-  shippingSteps.ready_to_collect,
-  shippingSteps.completed,
 ] as const;

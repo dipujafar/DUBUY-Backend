@@ -16,10 +16,25 @@ const createRequests = async (payload: IRequests) => {
 // ------------------------------------------ update the product for resend quotation ------------------------------------------
 const updateRequestsForResendQuotation = async (
   id: string,
-  payload: Partial<IRequests>,
+  payload: IRequests,
 ) => {
+  const isExists = await Requests.isRequestExists(id);
+  if (!isExists) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+  }
+
+  // @ts-ignore
+  if (isExists?.isDeleted) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Product Request is deleted');
+  }
+
   payload['status'] = status.quotation;
   payload['displayStatus'] = displayStatus.received_quotation;
+  const totalPrice = payload['price'] * payload['quantity'];
+  const needToPay = totalPrice * 0.25;
+  payload['totalPrice'] = totalPrice;
+  payload['needToPay'] = needToPay;
+
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
     throw new Error('Failed to update Requests');
