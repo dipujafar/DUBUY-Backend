@@ -1,8 +1,6 @@
 export const status = {
   request: 'request',
   quotation: 'quotation',
-  payment: 'initiate_payment_request',
-  reject_payment_request: 'reject_payment_request',
   accepted: 'accepted',
   rejected: 'rejected',
   delivered: 'delivered',
@@ -11,7 +9,6 @@ export const status = {
 export const statusEnum = [
   status.request,
   status.quotation,
-  status.payment,
   status.accepted,
   status.rejected,
   status.delivered,

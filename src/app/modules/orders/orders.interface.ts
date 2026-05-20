@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongoose';
 import { Model } from 'mongoose';
-import { DISPLAY_STATUS, SHIPPING_STEPS } from './orders.constants';
+import { DISPLAY_STATUS, SHIPPING_STEPS, status } from './orders.constants';
 
 export type ShippingStatusType = (typeof SHIPPING_STEPS)[number];
 export type DisplayStatus = (typeof DISPLAY_STATUS)[number];
@@ -14,8 +14,9 @@ export interface IShippingStep {
 export interface IOrders {
   productRequest: ObjectId;
   payment: ObjectId;
-  paymentPercent: number;
+  user: ObjectId;
   shippingStatus: IShippingStep[];
+  status: keyof typeof status;
   displayStatus: DisplayStatus;
   isDeleted: boolean;
 }

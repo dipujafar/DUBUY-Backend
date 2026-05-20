@@ -5,47 +5,272 @@ import AppError from '../../error/AppError';
 import QueryBuilder from '../../class/builder/QueryBuilder';
 import { displayStatus, status } from '../product-requests/requests.constants';
 import Requests from '../product-requests/requests.models';
+import { paymentStatus } from './payment.constants';
+import Orders from '../orders/orders.models';
+import mongoose, { get } from 'mongoose';
 
-const createPaymentInitIntoDB = async (payload: IPayment) => {
+const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
 
-  const isExists: any = await Requests.isRequestExists(productRequest as any);
+  const session = await mongoose.startSession();
 
-  if (!isExists) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
-  }
+  try {
+    session.startTransaction();
 
-  if (isExists?.status === status.payment) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Already send initial payment request. Please wait for admin approval',
+    const isExists = await Requests.findById(productRequest).session(session);
+
+    if (!isExists) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+    }
+
+    if (isExists?.displayStatus === displayStatus.payment_request) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Already sent initial payment request. Please wait for admin approval',
+      );
+    }
+
+    const updateRequest = await Requests.findByIdAndUpdate(
+      productRequest,
+      { displayStatus: displayStatus.payment_request },
+      { new: true, session },
     );
-  }
 
-  const updateProductRequestData = {
-    status: status.payment,
-    displayStatus: displayStatus.payment_request,
-  };
-  const updateRequest = await Requests.findByIdAndUpdate(
-    productRequest,
-    updateProductRequestData,
-    { new: true },
-  );
+    if (!updateRequest) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to receive payment request! Please try again',
+      );
+    }
 
-  if (!updateRequest) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Failed receive payment request! Please try again',
-    );
-  }
+    payload['amount'] = isExists?.needToPay;
+    payload['paymentPercent'] = isExists?.needToPayPercent;
 
-  const result = await Payment.create(payload);
-  if (!result) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create payment');
+    const [result] = await Payment.create([payload], { session });
+
+    if (!result) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create payment');
+    }
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-  return result;
 };
 
+const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
+  const { productRequest } = payload;
+
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const isExists = await Requests.findById(productRequest).session(session);
+
+    if (!isExists) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+    }
+
+    if (isExists?.displayStatus === displayStatus.payment_request) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Already sent initial payment request. Please wait for admin approval',
+      );
+    }
+
+    const updateRequest = await Requests.findByIdAndUpdate(
+      productRequest,
+      { displayStatus: displayStatus.payment_request },
+      { new: true, session },
+    );
+
+    if (!updateRequest) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to receive payment request! Please try again',
+      );
+    }
+
+    payload['amount'] = isExists?.needToPay;
+    payload['paymentPercent'] = isExists?.needToPayPercent;
+
+    const [result] = await Payment.create([payload], { session });
+
+    if (!result) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create payment');
+    }
+
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+// ------------------------------------------ accept payment ------------------------------------------
+const acceptPaymentIntoDB = async (id: string) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const payment = (await Payment.isPaymentExists(id)) as any;
+
+    // statistics validation
+    if (!payment || payment?.isDeleted) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Payment not found');
+    }
+
+    // already accepted check
+    if (payment.status === paymentStatus.accepted) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Payment already accepted');
+    }
+
+    const isRequestExists: any = await Requests.isRequestExists(
+      payment.productRequest as string,
+    );
+
+    const getNeedToPay = isRequestExists?.totalPrice * 0.75;
+    const currentPay = getNeedToPay - isRequestExists?.needToPay;
+
+    const updateRequestData = {
+      status: status.accepted,
+      displayStatus: displayStatus.on_progress,
+      needToPay: currentPay,
+      needToPayPercent: 75,
+      totalPaid: isRequestExists?.needToPay,
+    };
+
+    // update request
+    const updateProductRequest = await Requests.findByIdAndUpdate(
+      payment.productRequest,
+      updateRequestData,
+      {
+        new: true,
+        session,
+      },
+    );
+
+    if (!updateProductRequest) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to update product request',
+      );
+    }
+
+    // create order
+    await Orders.create(
+      [
+        {
+          productRequest: payment.productRequest,
+          payment: payment._id,
+          user: updateProductRequest.user,
+        },
+      ],
+      { session },
+    );
+
+    // update payment
+    const result = await Payment.findByIdAndUpdate(
+      id,
+      {
+        status: paymentStatus.accepted,
+      },
+      {
+        new: true,
+        session,
+      },
+    );
+
+    if (!result) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
+    }
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw error;
+  }
+};
+
+// ------------------------------------------ reject payment ------------------------------------------
+const rejectPaymentIntoDB = async (id: string) => {
+  const session = await mongoose.startSession();
+
+  try {
+    session.startTransaction();
+
+    const payment = (await Payment.isPaymentExists(id)) as any;
+
+    if (!payment || payment?.isDeleted) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Payment not found');
+    }
+
+    if (payment.status === paymentStatus.rejected) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Payment already rejected');
+    }
+
+    // update request
+    const updateRequest = await Requests.findByIdAndUpdate(
+      payment.productRequest,
+      {
+        displayStatus: displayStatus.reject_payment_request,
+      },
+      {
+        new: true,
+        session,
+      },
+    );
+
+    if (!updateRequest) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to update request status',
+      );
+    }
+
+    // update payment
+    const result = await Payment.findByIdAndUpdate(
+      id,
+      {
+        status: paymentStatus.rejected,
+      },
+      {
+        new: true,
+        session,
+      },
+    );
+
+    if (!result) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject payment');
+    }
+
+    await session.commitTransaction();
+    await session.endSession();
+
+    return result;
+  } catch (error) {
+    await session.abortTransaction();
+    await session.endSession();
+
+    throw error;
+  }
+};
+
+// ------------------------------------------ get all payment ------------------------------------------
 const getAllPayment = async (query: Record<string, any>) => {
   query['isDeleted'] = false;
   const paymentModel = new QueryBuilder(Payment.find(), query)
@@ -93,7 +318,9 @@ const deletePayment = async (id: string) => {
 };
 
 export const paymentService = {
-  createPaymentInitIntoDB,
+  createInitialPaymentIntoDB,
+  acceptPaymentIntoDB,
+  rejectPaymentIntoDB,
   getAllPayment,
   getPaymentById,
   updatePayment,

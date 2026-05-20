@@ -29,6 +29,8 @@ const requestsSchema = new Schema<IRequests>(
     quantity: { type: 'number', default: null },
     totalPrice: { type: 'number', default: null },
     needToPay: { type: 'number', default: null },
+    needToPayPercent: { type: 'number', default: null },
+    totalPaid: { type: 'number', default: 0 },
     status: {
       type: 'string',
       enum: {

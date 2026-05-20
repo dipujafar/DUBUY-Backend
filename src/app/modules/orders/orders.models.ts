@@ -1,6 +1,11 @@
 import { model, Schema } from 'mongoose';
 import { IOrders, IOrdersModules, IShippingStep } from './orders.interface';
-import { SHIPPING_STEPS, shippingSteps } from './orders.constants';
+import {
+  DISPLAY_STATUS,
+  displayStatus,
+  SHIPPING_STEPS,
+  shippingSteps,
+} from './orders.constants';
 
 const shippingStepSchema = new Schema<IShippingStep>({
   status: {
@@ -34,10 +39,10 @@ const ordersSchema = new Schema<IOrders>(
       ref: 'Payment',
       required: true,
     },
-    paymentPercent: {
-      type: 'number',
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
       required: true,
-      default: 0,
     },
     shippingStatus: {
       type: [shippingStepSchema],
@@ -45,9 +50,19 @@ const ordersSchema = new Schema<IOrders>(
       default: () =>
         SHIPPING_STEPS.map(step => ({
           status: step,
-          isComplete: step === shippingSteps.pending,
-          updatedAt: step === shippingSteps.pending ? new Date() : undefined,
+          isComplete: step === shippingSteps.payment_receive,
+          updatedAt:
+            step === shippingSteps.payment_receive ? new Date() : undefined,
         })),
+    },
+    displayStatus: {
+      type: String,
+      enum: {
+        values: DISPLAY_STATUS,
+        message: `{VALUE} is not a valid status. Accepted values: ${DISPLAY_STATUS.join(', ')}`,
+      },
+      default: displayStatus.on_progress,
+      required: true,
     },
 
     isDeleted: { type: 'boolean', default: false },

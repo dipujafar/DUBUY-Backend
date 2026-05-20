@@ -20,6 +20,8 @@ export interface IRequests {
   color: string;
   quantity: number;
   needToPay: number;
+  needToPayPercent: number;
+  totalPaid: number;
   status: keyof typeof status;
   displayStatus: DisplayStatus;
   arrivedImages?: IArrivedImages[];

@@ -10,4 +10,8 @@ export interface IPayment {
   isDeleted: boolean;
 }
 
-export type IPaymentModules = Model<IPayment, Record<string, unknown>>;
+// export type IPaymentModules = Model<IPayment, Record<string, unknown>>;
+
+export interface IPaymentModules extends Model<IPayment> {
+  isPaymentExists(id: string): Promise<boolean>;
+}

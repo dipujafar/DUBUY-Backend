@@ -20,7 +20,7 @@ const createCategory = async (payload: ICategory) => {
 
 const getAllCategories = async (query: Record<string, any>) => {
   const categoriesModel = new QueryBuilder(Category.find(), query)
-    .search(['name'])
+    .search(['name', 'description'])
     .filter()
     .paginate()
     .sort()

@@ -62,6 +62,8 @@ const moneyTransferCompanySchema = new Schema<IMoneyTransferCompany>(
   },
 );
 
+moneyTransferCompanySchema.index({ location: '2dsphere' });
+
 moneyTransferCompanySchema.pre('find', function (next) {
   this.where({ isDeleted: false });
   next();

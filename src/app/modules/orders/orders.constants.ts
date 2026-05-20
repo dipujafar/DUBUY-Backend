@@ -1,3 +1,9 @@
+export const status = {
+  on_progress: 'on_progress',
+  completed: 'completed',
+  canceled: 'canceled',
+};
+
 export const displayStatus = {
   on_progress: 'On Progress',
   in_transit: 'In Transit',
@@ -15,7 +21,6 @@ export const DISPLAY_STATUS = [
 ] as const;
 
 export const shippingSteps = {
-  pending: 'pending',
   payment_receive: 'payment_receive',
   purchased_in_UAE: 'purchased_in_UAE',
   in_warehouse: 'in_warehouse',
@@ -26,7 +31,6 @@ export const shippingSteps = {
 } as const;
 
 export const SHIPPING_STEPS = [
-  shippingSteps.pending,
   shippingSteps.payment_receive,
   shippingSteps.purchased_in_UAE,
   shippingSteps.in_warehouse,

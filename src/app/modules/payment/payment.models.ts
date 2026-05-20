@@ -34,22 +34,20 @@ const paymentSchema = new Schema<IPayment>(
   },
 );
 
-//paymentSchema.pre('find', function (next) {
-//  //@ts-ignore
-//  this.find({ isDeleted: { $ne: true } });
-//  next();
-//});
-
-//paymentSchema.pre('findOne', function (next) {
-//@ts-ignore
-//this.find({ isDeleted: { $ne: true } });
-// next();
-//});
+paymentSchema.pre('find', function (next) {
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
 
 paymentSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
   next();
 });
+
+paymentSchema.statics.isPaymentExists = async function (id: string) {
+  const result = await Payment.findById(id);
+  return result;
+};
 
 const Payment = model<IPayment, IPaymentModules>('Payment', paymentSchema);
 export default Payment;

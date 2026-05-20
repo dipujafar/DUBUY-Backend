@@ -13,10 +13,25 @@ router.post(
   validateRequest(paymentValidation.createPaymentValidationSchema),
   paymentController.createPaymentInit,
 );
+router.post(
+  '/second-payment',
+  auth(USER_ROLE.user),
+  validateRequest(paymentValidation.createPaymentValidationSchema),
+  paymentController.createPaymentInit,
+);
+
 router.patch(
-    "/accept-payment/:id",
-    auth(USER_ROLE.admin),
-)
+  '/accept-payment/:id',
+  auth(USER_ROLE.admin),
+  paymentController.acceptPayment,
+);
+
+router.patch(
+  '/reject-payment/:id',
+  auth(USER_ROLE.admin),
+  paymentController.rejectPayment,
+);
+
 router.patch('/:id', paymentController.updatePayment);
 router.delete('/:id', paymentController.deletePayment);
 router.get('/:id', paymentController.getPaymentById);

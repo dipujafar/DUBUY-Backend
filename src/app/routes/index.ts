@@ -8,6 +8,7 @@ import { requestsRoutes } from '../modules/product-requests/requests.route';
 import { categoryRoutes } from '../modules/category/category.route';
 import { moneyTransferCompanyRoutes } from '../modules/moneyTransferCompany/moneyTransferCompany.route';
 import { paymentRoutes } from '../modules/payment/payment.route';
+import { ordersRoutes } from '../modules/orders/orders.route';
 
 const router = Router();
 const moduleRoutes = [
@@ -46,6 +47,10 @@ const moduleRoutes = [
   {
     path: '/payments',
     route: paymentRoutes,
+  },
+  {
+    path: '/orders',
+    route: ordersRoutes,
   },
 ];
 moduleRoutes.forEach(route => router.use(route.path, route.route));

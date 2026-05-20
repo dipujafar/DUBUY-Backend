@@ -4,7 +4,7 @@ import { paymentService } from './payment.service';
 import sendResponse from '../../utils/sendResponse';
 
 const createPaymentInit = catchAsync(async (req: Request, res: Response) => {
-  const result = await paymentService.createPaymentInitIntoDB(req.body);
+  const result = await paymentService.createInitialPaymentIntoDB(req.body);
   sendResponse(res, {
     statusCode: 201,
     success: true,
@@ -13,6 +13,31 @@ const createPaymentInit = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- accept payment ------------------------------------------------
+const acceptPayment = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await paymentService.acceptPaymentIntoDB(id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Payment accepted successfully',
+    data: result,
+  });
+});
+
+// --------------------------------------------- reject payment ------------------------------------------------
+const rejectPayment = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await paymentService.rejectPaymentIntoDB(id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Payment rejected successfully',
+    data: result,
+  });
+});
+
+// --------------------------------------------- get all payment ------------------------------------------------
 
 const getAllPayment = catchAsync(async (req: Request, res: Response) => {
   const result = await paymentService.getAllPayment(req.query);
@@ -55,6 +80,8 @@ const deletePayment = catchAsync(async (req: Request, res: Response) => {
 
 export const paymentController = {
   createPaymentInit,
+  acceptPayment,
+  rejectPayment,
   getAllPayment,
   getPaymentById,
   updatePayment,

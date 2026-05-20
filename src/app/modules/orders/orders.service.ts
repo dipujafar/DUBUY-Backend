@@ -1,9 +1,8 @@
-
 import httpStatus from 'http-status';
 import { IOrders } from './orders.interface';
 import Orders from './orders.models';
-import QueryBuilder from '../../builder/QueryBuilder';
 import AppError from '../../error/AppError';
+import QueryBuilder from '../../class/builder/QueryBuilder';
 
 const createOrders = async (payload: IOrders) => {
   const result = await Orders.create(payload);
@@ -14,8 +13,32 @@ const createOrders = async (payload: IOrders) => {
 };
 
 const getAllOrders = async (query: Record<string, any>) => {
-query["isDeleted"] = false;
+  query['isDeleted'] = false;
   const ordersModel = new QueryBuilder(Orders.find(), query)
+    .search([])
+    .filter()
+    .paginate()
+    .sort()
+    .fields();
+
+  const data = await ordersModel.modelQuery;
+  const meta = await ordersModel.countTotal();
+
+  return {
+    data,
+    meta,
+  };
+};
+const getMyOrdersFromDB = async (
+  query: Record<string, any>,
+  userId: string,
+) => {
+  query['isDeleted'] = false;
+  query['user'] = userId;
+  const ordersModel = new QueryBuilder(
+    Orders.find().populate('productRequest'),
+    query,
+  )
     .search([])
     .filter()
     .paginate()
@@ -33,7 +56,7 @@ query["isDeleted"] = false;
 
 const getOrdersById = async (id: string) => {
   const result = await Orders.findById(id);
-  if (!result && result?.isDeleted) {
+  if (!result || result?.isDeleted) {
     throw new Error('Orders not found!');
   }
   return result;
@@ -51,7 +74,7 @@ const deleteOrders = async (id: string) => {
   const result = await Orders.findByIdAndUpdate(
     id,
     { isDeleted: true },
-    { new: true }
+    { new: true },
   );
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to delete orders');
@@ -62,6 +85,7 @@ const deleteOrders = async (id: string) => {
 export const ordersService = {
   createOrders,
   getAllOrders,
+  getMyOrdersFromDB,
   getOrdersById,
   updateOrders,
   deleteOrders,

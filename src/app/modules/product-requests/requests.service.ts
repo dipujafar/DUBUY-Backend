@@ -34,6 +34,7 @@ const updateRequestsForResendQuotation = async (
   const needToPay = totalPrice * 0.25;
   payload['totalPrice'] = totalPrice;
   payload['needToPay'] = needToPay;
+  payload['needToPayPercent'] = 25;
 
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
