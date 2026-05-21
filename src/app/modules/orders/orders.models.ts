@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
 import { IOrders, IOrdersModules, IShippingStep } from './orders.interface';
 import {
-  DISPLAY_STATUS,
-  displayStatus,
+  ORDER_DISPLAY_STATUS,
+  orderDisplayStatus,
   SHIPPING_STEPS,
   shippingSteps,
 } from './orders.constants';
@@ -29,7 +29,7 @@ const shippingStepSchema = new Schema<IShippingStep>({
 
 const ordersSchema = new Schema<IOrders>(
   {
-    productRequest: {
+    product: {
       type: Schema.Types.ObjectId,
       ref: 'Requests',
       required: true,
@@ -58,10 +58,10 @@ const ordersSchema = new Schema<IOrders>(
     displayStatus: {
       type: String,
       enum: {
-        values: DISPLAY_STATUS,
-        message: `{VALUE} is not a valid status. Accepted values: ${DISPLAY_STATUS.join(', ')}`,
+        values: ORDER_DISPLAY_STATUS,
+        message: `{VALUE} is not a valid status. Accepted values: ${ORDER_DISPLAY_STATUS.join(', ')}`,
       },
-      default: displayStatus.on_progress,
+      default: orderDisplayStatus.on_progress,
       required: true,
     },
 
@@ -69,25 +69,67 @@ const ordersSchema = new Schema<IOrders>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
 
-//ordersSchema.pre('find', function (next) {
-//  //@ts-ignore
-//  this.find({ isDeleted: { $ne: true } });
-//  next();
-//});
+// --------------------------- set virtuals to pass  payment related information in order data ---------------------------
+ordersSchema.virtual('needToPay').get(function () {
+  if (
+    this.product &&
+    typeof this.product === 'object' &&
+    'needToPay' in this.product
+  ) {
+    return this.product.needToPay;
+  }
 
-//ordersSchema.pre('findOne', function (next) {
-//@ts-ignore
-//this.find({ isDeleted: { $ne: true } });
-// next();
-//});
+  return null;
+});
+
+ordersSchema.virtual('needToPayPercent').get(function () {
+  if (
+    this.product &&
+    typeof this.product === 'object' &&
+    'needToPayPercent' in this.product
+  ) {
+    return this.product.needToPayPercent;
+  }
+
+  return null;
+});
+
+ordersSchema.virtual('totalPaid').get(function () {
+  if (
+    this.product &&
+    typeof this.product === 'object' &&
+    'needToPay' in this.product
+  ) {
+    return this.product.totalPaid;
+  }
+
+  return null;
+});
+
+ordersSchema.pre('find', function (next) {
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
+
+ordersSchema.pre('findOne', function (next) {
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
 
 ordersSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
   next();
 });
+
+ordersSchema.statics.isOrderExists = async function (id: string) {
+  const order = await this.findById(id);
+  return order;
+};
 
 const Orders = model<IOrders, IOrdersModules>('Orders', ordersSchema);
 export default Orders;

@@ -69,9 +69,25 @@ moneyTransferCompanySchema.pre('find', function (next) {
   next();
 });
 
-moneyTransferCompanySchema.pre('aggregate', function (next) {
-  this.pipeline().unshift({ $match: { isDeleted: false } });
+moneyTransferCompanySchema.pre('findOne', function (next) {
+  this.where({ isDeleted: false });
   next();
+});
+
+// moneyTransferCompanySchema.pre('aggregate', function (next) {
+//   this.pipeline().unshift({ $match: { isDeleted: false } });
+//   next();
+// });
+
+// In your schema/plugin file
+moneyTransferCompanySchema.pre('aggregate', function () {
+  const pipeline = this.pipeline();
+
+  // ✅ Don't inject $match if $geoNear is already the first stage
+  // @ts-ignore
+  if (pipeline.length > 0 && pipeline[0].$geoNear) return;
+
+  pipeline.unshift({ $match: { isDeleted: false } });
 });
 
 const MoneyTransferCompany = model<

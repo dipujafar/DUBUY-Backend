@@ -76,11 +76,15 @@ const getMyProductRequests = async (
   userId: string,
 ) => {
   query['user'] = userId;
-  query['status'] = status.request;
   query['fields'] =
     query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
 
-  const requestsModel = new QueryBuilder(Requests.find(), query)
+  const requestsModel = new QueryBuilder(
+    Requests.find({
+      $or: [{ status: status.request }, { status: status.rejected }],
+    }),
+    query,
+  )
     .search([])
     .filter()
     .paginate()
@@ -105,10 +109,7 @@ const getMyReceivedQuotation = async (
   query['status'] = status.quotation;
   query['fields'] =
     query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
-  const requestsModel = new QueryBuilder(
-    Requests.find().populate('user'),
-    query,
-  )
+  const requestsModel = new QueryBuilder(Requests.find(), query)
     .search([])
     .filter()
     .paginate()

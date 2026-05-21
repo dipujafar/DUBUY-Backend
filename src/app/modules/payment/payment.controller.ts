@@ -13,6 +13,16 @@ const createPaymentInit = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const createSecondPayment = catchAsync(async (req: Request, res: Response) => {
+  const result = await paymentService.createSecondPaymentInitIntoDB(req.body);
+  sendResponse(res, {
+    statusCode: 201,
+    success: true,
+    message: 'Payment created successfully',
+    data: result,
+  });
+});
+
 // --------------------------------------------- accept payment ------------------------------------------------
 const acceptPayment = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -20,7 +30,7 @@ const acceptPayment = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Payment accepted successfully',
+    message: 'Payment accepted successfully and order created',
     data: result,
   });
 });
@@ -80,6 +90,7 @@ const deletePayment = catchAsync(async (req: Request, res: Response) => {
 
 export const paymentController = {
   createPaymentInit,
+  createSecondPayment,
   acceptPayment,
   rejectPayment,
   getAllPayment,

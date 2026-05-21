@@ -10,14 +10,14 @@ const router = Router();
 router.post(
   '/init-payment',
   auth(USER_ROLE.user),
-  validateRequest(paymentValidation.createPaymentValidationSchema),
+  validateRequest(paymentValidation.createInitPaymentValidationSchema),
   paymentController.createPaymentInit,
 );
 router.post(
   '/second-payment',
   auth(USER_ROLE.user),
-  validateRequest(paymentValidation.createPaymentValidationSchema),
-  paymentController.createPaymentInit,
+  validateRequest(paymentValidation.createSecondPaymentValidationSchema),
+  paymentController.createSecondPayment,
 );
 
 router.patch(

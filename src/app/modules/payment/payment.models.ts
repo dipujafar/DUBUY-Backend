@@ -9,7 +9,12 @@ const paymentSchema = new Schema<IPayment>(
     productRequest: {
       type: Schema.Types.ObjectId,
       ref: 'Requests',
-      required: true,
+      default: null,
+    },
+    order: {
+      type: Schema.Types.ObjectId,
+      ref: 'Orders',
+      default: null,
     },
     moneyTransferCompany: {
       type: Schema.Types.ObjectId,
@@ -35,6 +40,11 @@ const paymentSchema = new Schema<IPayment>(
 );
 
 paymentSchema.pre('find', function (next) {
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
+
+paymentSchema.pre('findOne', function (next) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });

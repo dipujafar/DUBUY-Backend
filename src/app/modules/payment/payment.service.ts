@@ -8,6 +8,7 @@ import Requests from '../product-requests/requests.models';
 import { paymentStatus } from './payment.constants';
 import Orders from '../orders/orders.models';
 import mongoose, { get } from 'mongoose';
+import { orderDisplayStatus, orderStatus } from '../orders/orders.constants';
 
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
@@ -49,7 +50,10 @@ const createInitialPaymentIntoDB = async (payload: IPayment) => {
     const [result] = await Payment.create([payload], { session });
 
     if (!result) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create payment');
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to create payment request',
+      );
     }
 
     await session.commitTransaction();
@@ -63,29 +67,32 @@ const createInitialPaymentIntoDB = async (payload: IPayment) => {
 };
 
 const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
-  const { productRequest } = payload;
+  const { order } = payload;
 
   const session = await mongoose.startSession();
 
   try {
     session.startTransaction();
 
-    const isExists = await Requests.findById(productRequest).session(session);
+    const isOrderExists = await Orders.findById(order).session(session);
 
-    if (!isExists) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+    if (!isOrderExists) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Order not found');
     }
 
-    if (isExists?.displayStatus === displayStatus.payment_request) {
+    if (isOrderExists?.displayStatus === orderDisplayStatus.payment_request) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         'Already sent initial payment request. Please wait for admin approval',
       );
     }
 
-    const updateRequest = await Requests.findByIdAndUpdate(
-      productRequest,
-      { displayStatus: displayStatus.payment_request },
+    const updateRequest = await Orders.findByIdAndUpdate(
+      order,
+      {
+        displayStatus: orderDisplayStatus.payment_request,
+        status: orderStatus.payment_request,
+      },
       { new: true, session },
     );
 
@@ -96,13 +103,24 @@ const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
       );
     }
 
-    payload['amount'] = isExists?.needToPay;
-    payload['paymentPercent'] = isExists?.needToPayPercent;
+    const isRequestExists = await Requests.findById(
+      isOrderExists?.product,
+    ).session(session);
+
+    if (!isRequestExists) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+    }
+
+    payload['amount'] = isRequestExists?.needToPay;
+    payload['paymentPercent'] = isRequestExists?.needToPayPercent;
 
     const [result] = await Payment.create([payload], { session });
 
     if (!result) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create payment');
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to create payment request',
+      );
     }
 
     await session.commitTransaction();
@@ -167,10 +185,10 @@ const acceptPaymentIntoDB = async (id: string) => {
     }
 
     // create order
-    await Orders.create(
+    const order = await Orders.create(
       [
         {
-          productRequest: payment.productRequest,
+          product: payment.productRequest,
           payment: payment._id,
           user: updateProductRequest.user,
         },
@@ -182,6 +200,7 @@ const acceptPaymentIntoDB = async (id: string) => {
     const result = await Payment.findByIdAndUpdate(
       id,
       {
+        order: order[0]._id,
         status: paymentStatus.accepted,
       },
       {
@@ -319,6 +338,7 @@ const deletePayment = async (id: string) => {
 
 export const paymentService = {
   createInitialPaymentIntoDB,
+  createSecondPaymentInitIntoDB,
   acceptPaymentIntoDB,
   rejectPaymentIntoDB,
   getAllPayment,

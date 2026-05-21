@@ -53,6 +53,11 @@ categorySchema.pre('find', function (next) {
   next();
 });
 
+categorySchema.pre('findOne', function (next) {
+  this.where({ isDeleted: false });
+  next();
+});
+
 categorySchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { isDeleted: false } });
   next();

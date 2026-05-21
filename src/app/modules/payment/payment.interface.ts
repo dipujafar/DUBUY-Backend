@@ -3,6 +3,7 @@ import { paymentStatus } from './payment.constants';
 
 export interface IPayment {
   amount: number;
+  order: ObjectId;
   paymentPercent: number;
   productRequest: ObjectId;
   moneyTransferCompany: ObjectId;

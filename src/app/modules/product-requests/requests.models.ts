@@ -63,6 +63,11 @@ requestsSchema.pre('find', function (next) {
   next();
 });
 
+requestsSchema.pre('findOne', function (next) {
+  this.where({ isDeleted: false });
+  next();
+});
+
 requestsSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { isDeleted: false } });
   next();

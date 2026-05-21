@@ -17,28 +17,62 @@ const createMoneyTransferCompany = async (payload: IMoneyTransferCompany) => {
 
 const getAllMoneyTransferCompany = async (query: Record<string, any>) => {
   query['isDeleted'] = false;
-
-  const { lat, lng, maxDistance = 10, ...restQuery } = query; // maxDistance in km
-
-  let baseQuery;
+  const { lat, lng, ...restQuery } = query;
 
   if (lat && lng) {
-    const radiusInRadians = parseFloat(maxDistance) / 6378.1; // convert km → radians
+    // Extract pagination params from restQuery
+    const page = parseInt(restQuery.page) || 1;
+    const limit = parseInt(restQuery.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    baseQuery = MoneyTransferCompany.find({
-      location: {
-        $geoWithin: {
-          $centerSphere: [
-            [parseFloat(lng), parseFloat(lat)], // [longitude, latitude]
-            radiusInRadians,
-          ],
+    const aggregationPipeline: any[] = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)],
+          },
+          distanceField: 'distance', // adds distance (in meters) to each result
+          spherical: true,
+          query: { isDeleted: false }, // filter inside $geoNear
         },
       },
-    });
-  } else {
-    baseQuery = MoneyTransferCompany.find();
+      { $skip: skip },
+      { $limit: limit },
+    ];
+
+    const data = await MoneyTransferCompany.aggregate(aggregationPipeline);
+
+    // Count total for meta
+    const countPipeline: any[] = [
+      {
+        $geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [parseFloat(lng), parseFloat(lat)],
+          },
+          distanceField: 'distance',
+          spherical: true,
+          query: { isDeleted: false },
+        },
+      },
+      { $count: 'total' },
+    ];
+    const countResult = await MoneyTransferCompany.aggregate(countPipeline);
+    const total = countResult[0]?.total || 0;
+
+    const meta = {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    };
+
+    return { data, meta };
   }
 
+  // Normal flow without geo sorting
+  const baseQuery = MoneyTransferCompany.find();
   const moneyTransferCompanyModel = new QueryBuilder(baseQuery, restQuery)
     .search([])
     .filter()
@@ -48,7 +82,6 @@ const getAllMoneyTransferCompany = async (query: Record<string, any>) => {
 
   const data = await moneyTransferCompanyModel.modelQuery;
   const meta = await moneyTransferCompanyModel.countTotal();
-
   return { data, meta };
 };
 

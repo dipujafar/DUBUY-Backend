@@ -36,7 +36,7 @@ const getMyOrdersFromDB = async (
   query['isDeleted'] = false;
   query['user'] = userId;
   const ordersModel = new QueryBuilder(
-    Orders.find().populate('productRequest'),
+    Orders.find().populate('product'),
     query,
   )
     .search([])
@@ -55,7 +55,7 @@ const getMyOrdersFromDB = async (
 };
 
 const getOrdersById = async (id: string) => {
-  const result = await Orders.findById(id);
+  const result = await Orders.findById(id).populate('product');
   if (!result || result?.isDeleted) {
     throw new Error('Orders not found!');
   }

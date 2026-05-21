@@ -1,9 +1,14 @@
-import { ObjectId } from 'mongoose';
+import { ObjectId, Types } from 'mongoose';
 import { Model } from 'mongoose';
-import { DISPLAY_STATUS, SHIPPING_STEPS, status } from './orders.constants';
+import { IRequests } from '../product-requests/requests.interface';
+import {
+  ORDER_DISPLAY_STATUS,
+  orderStatus,
+  SHIPPING_STEPS,
+} from './orders.constants';
 
 export type ShippingStatusType = (typeof SHIPPING_STEPS)[number];
-export type DisplayStatus = (typeof DISPLAY_STATUS)[number];
+export type DisplayStatus = (typeof ORDER_DISPLAY_STATUS)[number];
 
 export interface IShippingStep {
   status: ShippingStatusType;
@@ -12,13 +17,15 @@ export interface IShippingStep {
 }
 
 export interface IOrders {
-  productRequest: ObjectId;
+  product: Types.ObjectId | IRequests;
   payment: ObjectId;
   user: ObjectId;
   shippingStatus: IShippingStep[];
-  status: keyof typeof status;
+  status: keyof typeof orderStatus;
   displayStatus: DisplayStatus;
   isDeleted: boolean;
 }
 
-export type IOrdersModules = Model<IOrders, Record<string, unknown>>;
+export interface IOrdersModules extends Model<IOrders> {
+  isOrderExist(id: string): Promise<IOrders | null>;
+}
