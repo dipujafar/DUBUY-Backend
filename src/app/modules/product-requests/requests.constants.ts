@@ -19,6 +19,7 @@ export const displayStatus = {
   payment_request: 'Payment Request',
   reject_payment_request: 'Reject Payment Request',
   on_progress: 'On Progress',
+  rejected: 'Rejected',
   completed: 'Completed',
 } as const;
 
@@ -29,5 +30,6 @@ export const DISPLAY_STATUS = [
   displayStatus.payment_request,
   displayStatus.reject_payment_request,
   displayStatus.on_progress,
+  displayStatus.rejected,
   displayStatus.completed,
 ] as const;

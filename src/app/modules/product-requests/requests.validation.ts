@@ -24,15 +24,8 @@ export const reSendQuotationSchema = z.object({
       })
       .positive('Product price must be greater than 0'),
 
-    couponCode: z.string().optional(),
-
-    size: z
-      .string({ required_error: 'Size is required' })
-      .min(1, 'Size is required'),
-
-    color: z
-      .string({ required_error: 'Color is required' })
-      .min(1, 'Color is required'),
+    size: z.string().min(1, 'Size is required').optional(),
+    color: z.string().min(1, 'Color is required').optional(),
 
     quantity: z
       .number({

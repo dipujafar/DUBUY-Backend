@@ -6,7 +6,7 @@ export const orderStatus = {
   canceled: 'canceled',
 };
 
-export const STATUS = [
+export const ORDER_STATUS = [
   orderStatus.on_progress,
   orderStatus.payment_request,
   orderStatus.reject_payment_request,

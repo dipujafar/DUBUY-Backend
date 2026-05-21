@@ -15,7 +15,6 @@ export interface IRequests {
   title: string;
   price: number;
   totalPrice: number;
-  couponCode?: string;
   size: string;
   color: string;
   quantity: number;

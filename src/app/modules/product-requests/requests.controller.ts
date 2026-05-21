@@ -105,6 +105,17 @@ const updateRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- reject product request ------------------------------------------------
+const rejectRequests = catchAsync(async (req: Request, res: Response) => {
+  const result = await requestsService.rejectRequests(req.params.id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Requests rejected successfully',
+    data: result,
+  });
+});
+
 // --------------------------------------------- delete product request ------------------------------------------------
 const deleteRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.deleteRequests(req.params.id);
@@ -124,5 +135,6 @@ export const requestsController = {
   getRequestsById,
   getMyProductRequests,
   updateRequests,
+  rejectRequests,
   deleteRequests,
 };

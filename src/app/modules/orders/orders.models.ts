@@ -2,7 +2,9 @@ import { model, Schema } from 'mongoose';
 import { IOrders, IOrdersModules, IShippingStep } from './orders.interface';
 import {
   ORDER_DISPLAY_STATUS,
+  ORDER_STATUS,
   orderDisplayStatus,
+  orderStatus,
   SHIPPING_STEPS,
   shippingSteps,
 } from './orders.constants';
@@ -54,6 +56,14 @@ const ordersSchema = new Schema<IOrders>(
           updatedAt:
             step === shippingSteps.payment_receive ? new Date() : undefined,
         })),
+    },
+    status: {
+      type: String,
+      enum: {
+        values: ORDER_STATUS,
+        message: `{VALUE} is not a valid status. Accepted values: ${ORDER_STATUS.join(', ')}`,
+      },
+      default: orderStatus.on_progress as 'on_progress',
     },
     displayStatus: {
       type: String,

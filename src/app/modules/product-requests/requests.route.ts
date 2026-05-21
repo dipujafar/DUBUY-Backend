@@ -27,6 +27,12 @@ router.patch(
 );
 
 router.patch(
+  '/reject-request/:id',
+  auth(USER_ROLE.admin),
+  requestsController.rejectRequests,
+);
+
+router.patch(
   '/:id',
   auth(USER_ROLE.admin),
   validateRequest(requestValidation.updateRequestSchema),

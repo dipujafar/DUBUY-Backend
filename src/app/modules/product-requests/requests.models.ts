@@ -23,7 +23,6 @@ const requestsSchema = new Schema<IRequests>(
     productLink: { type: 'string', required: true },
     title: { type: 'string', default: null },
     price: { type: 'number', default: null },
-    couponCode: { type: 'string', default: null },
     size: { type: 'string', default: null },
     color: { type: 'string', default: null },
     quantity: { type: 'number', default: null },

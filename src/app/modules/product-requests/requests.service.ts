@@ -52,15 +52,44 @@ const getAllRequests = async (query: Record<string, any>) => {
     .sort()
     .fields();
 
-  const data = await requestsModel.modelQuery;
-  const meta = await requestsModel.countTotal();
+  const [data, meta, stats] = await Promise.all([
+    requestsModel.modelQuery,
+    requestsModel.countTotal(),
+    Requests.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+  ]);
+
+  const statsMap = stats.reduce(
+    (acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const stateDate = {
+    totalRequest: (Object.values(statsMap) as number[]).reduce(
+      (a, b) => a + b,
+      0,
+    ),
+    order: statsMap[status.accepted] || 0,
+    sendQuotation: statsMap[status.quotation] || 0,
+    rejected: statsMap[status.rejected] || 0,
+  };
 
   return {
+    stateDate,
     data,
     meta,
   };
 };
-
 // ------------------------------------------ get requests by id ------------------------------------------
 const getRequestsById = async (id: string) => {
   const result = await Requests.findById(id);
@@ -79,12 +108,7 @@ const getMyProductRequests = async (
   query['fields'] =
     query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
 
-  const requestsModel = new QueryBuilder(
-    Requests.find({
-      $or: [{ status: status.request }, { status: status.rejected }],
-    }),
-    query,
-  )
+  const requestsModel = new QueryBuilder(Requests.find(), query)
     .search([])
     .filter()
     .paginate()
@@ -107,8 +131,6 @@ const getMyReceivedQuotation = async (
 ) => {
   query['user'] = userId;
   query['status'] = status.quotation;
-  query['fields'] =
-    query['fields'] || 'productLink,displayStatus,createdAt,updatedAt';
   const requestsModel = new QueryBuilder(Requests.find(), query)
     .search([])
     .filter()
@@ -130,6 +152,29 @@ const updateRequest = async (id: string, payload: Partial<IRequests>) => {
   const result = await Requests.findByIdAndUpdate(id, payload, { new: true });
   if (!result) {
     throw new Error('Failed to update Requests');
+  }
+  return result;
+};
+
+// ------------------------------------------ reject requests ------------------------------------------
+const rejectRequests = async (id: string) => {
+  const isExists = (await Requests.isRequestExists(id)) as any;
+  if (!isExists) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
+  }
+  if (isExists?.status !== status.request) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'You can not reject this request in this stage',
+    );
+  }
+  const result = await Requests.findByIdAndUpdate(
+    id,
+    { status: status.rejected, displayStatus: displayStatus.rejected },
+    { new: true },
+  );
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject requests');
   }
   return result;
 };
@@ -159,5 +204,6 @@ export const requestsService = {
   getAllRequests,
   getRequestsById,
   updateRequest,
+  rejectRequests,
   deleteRequests,
 };
