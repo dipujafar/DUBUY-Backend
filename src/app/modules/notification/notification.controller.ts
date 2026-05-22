@@ -5,6 +5,16 @@ import httpStatus from 'http-status';
 import { notificationServices } from './notification.service';
 import catchAsync from '../../utils/catchAsync';
 
+const createNotification = catchAsync(async (req: Request, res: Response) => {
+  const result = await notificationServices.createNotificationInDb(req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Notification added successfully',
+    data: result,
+  });
+});
+
 const insertNotificationIntoDb = catchAsync(
   async (req: Request, res: Response) => {
     const result = await notificationServices.insertNotificationIntoDb(
@@ -43,6 +53,7 @@ const markAsDone = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const notificationControllers = {
+  createNotification,
   insertNotificationIntoDb,
   getAllNotifications,
   markAsDone,

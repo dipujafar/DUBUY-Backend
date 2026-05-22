@@ -5,14 +5,21 @@ import { Notification } from './notification.model';
 import QueryBuilder from '../../class/builder/QueryBuilder';
 import AppError from '../../error/AppError';
 import httpStatus from 'http-status';
-import moment from 'moment';
+
+const createNotificationInDb = async (payload: any) => {
+  const result = await Notification.create(payload);
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Notification created failed');
+  }
+  return result;
+};
 
 // Insert notifications into the database
 const insertNotificationIntoDb = async (payload: any) => {
   const result = await Notification.insertMany(payload);
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Notification created failed');
-  }  
+  }
   return result;
 };
 
@@ -48,6 +55,7 @@ const markAsDone = async (id: string) => {
 };
 
 export const notificationServices = {
+  createNotificationInDb,
   insertNotificationIntoDb,
   getAllNotifications,
   markAsDone,

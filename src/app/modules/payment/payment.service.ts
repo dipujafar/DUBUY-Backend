@@ -290,8 +290,11 @@ const rejectPaymentIntoDB = async (id: string) => {
 };
 
 // ------------------------------------------ get all payment ------------------------------------------
+// payment.service.ts
+
 const getAllPayment = async (query: Record<string, any>) => {
   query['isDeleted'] = false;
+
   const paymentModel = new QueryBuilder(Payment.find(), query)
     .search([])
     .filter()
@@ -302,9 +305,102 @@ const getAllPayment = async (query: Record<string, any>) => {
   const data = await paymentModel.modelQuery;
   const meta = await paymentModel.countTotal();
 
+  // ─── Statistics via aggregation pipeline ────────────────────────────
+  const stats = await Payment.aggregate([
+    { $match: { isDeleted: false } },
+    {
+      $facet: {
+        // Overall totals
+        overview: [
+          {
+            $group: {
+              _id: null,
+              totalRequests: { $sum: 1 },
+              totalAmount: { $sum: '$amount' },
+            },
+          },
+        ],
+
+        // Accepted payments → "revenue" + "funding"
+        accepted: [
+          { $match: { status: 'accepted' } },
+          {
+            $group: {
+              _id: null,
+              acceptedCount: { $sum: 1 },
+              totalRevenue: { $sum: '$amount' },
+              totalFunding: { $sum: '$amount' }, // same pool; rename if semantics differ
+            },
+          },
+        ],
+
+        // Pending / request payments
+        pending: [
+          { $match: { status: 'request' } },
+          {
+            $group: {
+              _id: null,
+              pendingCount: { $sum: 1 },
+              pendingAmount: { $sum: '$amount' },
+            },
+          },
+        ],
+
+        // Rejected payments
+        rejected: [
+          { $match: { status: 'rejected' } },
+          {
+            $group: {
+              _id: null,
+              rejectedCount: { $sum: 1 },
+              rejectedAmount: { $sum: '$amount' },
+            },
+          },
+        ],
+      },
+    },
+
+    // Flatten each facet array to a single object (or sensible default)
+    {
+      $project: {
+        overview: { $ifNull: [{ $arrayElemAt: ['$overview', 0] }, {}] },
+        accepted: { $ifNull: [{ $arrayElemAt: ['$accepted', 0] }, {}] },
+        pending: { $ifNull: [{ $arrayElemAt: ['$pending', 0] }, {}] },
+        rejected: { $ifNull: [{ $arrayElemAt: ['$rejected', 0] }, {}] },
+      },
+    },
+  ]);
+
+  const s = stats[0] ?? {};
+
+  const statistics = {
+    totalRequests: {
+      count: s.overview?.totalRequests ?? 0,
+      amount: s.overview?.totalAmount ?? 0,
+    },
+
+    totalRevenue: {
+      // accepted
+      count: s.accepted?.acceptedCount ?? 0,
+      amount: s.accepted?.totalRevenue ?? 0,
+    },
+
+    totalFundingMoney: {
+      // request (pending)
+      count: s.pending?.pendingCount ?? 0,
+      amount: s.pending?.pendingAmount ?? 0,
+    },
+
+    rejected: {
+      count: s.rejected?.rejectedCount ?? 0,
+      amount: s.rejected?.rejectedAmount ?? 0,
+    },
+  };
+
   return {
     data,
     meta,
+    statistics,
   };
 };
 

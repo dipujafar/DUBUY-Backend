@@ -45,7 +45,10 @@ const updateRequestsForResendQuotation = async (
 
 // ------------------------------------------ get all requests ------------------------------------------
 const getAllRequests = async (query: Record<string, any>) => {
-  const requestsModel = new QueryBuilder(Requests.find(), query)
+  const requestsModel = new QueryBuilder(
+    Requests.find().populate('user'),
+    query,
+  )
     .search([])
     .filter()
     .paginate()
@@ -162,6 +165,7 @@ const rejectRequests = async (id: string) => {
   if (!isExists) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
   }
+  console.log(isExists);
   if (isExists?.status !== status.request) {
     throw new AppError(
       httpStatus.BAD_REQUEST,

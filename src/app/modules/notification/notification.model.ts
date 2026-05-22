@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-import { modeType, TNotification } from './notification.interface';
+import { TNotification } from './notification.interface';
 
 const NotificationSchema = new Schema<TNotification>(
   {
@@ -8,16 +8,12 @@ const NotificationSchema = new Schema<TNotification>(
       ref: 'User',
       required: [true, 'Receiver id is required'],
     },
-    refference: {
-      type: Schema.Types.ObjectId,
-      //   dynamic refference
-      refPath: 'model_type',
-      required: [true, 'Receiver id is required'],
-    },
-    model_type: {
-      type: String,
-      enum: Object.values(modeType),
-    },
+    // refference: {
+    //   type: Schema.Types.ObjectId,
+    //   //   dynamic refference
+    //   refPath: 'model_type',
+    //   required: [true, 'Receiver id is required'],
+    // },
     message: {
       type: String,
       required: [true, 'Message is required'],
@@ -38,18 +34,13 @@ const NotificationSchema = new Schema<TNotification>(
   { timestamps: true },
 );
 
-// filter out deleted documents
 NotificationSchema.pre('find', function (next) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  this.find({ isDeleted: { $ne: true } });
+  this.where({ isDeleted: { $ne: true } });
   next();
 });
 
 NotificationSchema.pre('findOne', function (next) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //@ts-ignore
-  this.find({ isDeleted: { $ne: true } });
+  this.where({ isDeleted: { $ne: true } });
   next();
 });
 
