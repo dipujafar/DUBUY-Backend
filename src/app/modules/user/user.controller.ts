@@ -110,6 +110,24 @@ const deleteMYAccount = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const userOverviewChart = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getUserOverviewChart(req.query);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User overview chart successfully',
+    data: result,
+  });
+});
+const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getDashboardStats();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User statistics fetched successfully',
+    data: result,
+  });
+});
 
 export const userController = {
   createUser,
@@ -120,4 +138,6 @@ export const userController = {
   updateMyProfile,
   deleteUser,
   deleteMYAccount,
+  userOverviewChart,
+  getDashboardStats,
 };

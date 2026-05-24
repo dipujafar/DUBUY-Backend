@@ -5,6 +5,7 @@ export interface IUser {
   status: string;
   name: string;
   email: string;
+  fcmToken: string;
   bio: string;
   phoneNumber: string;
   password: string;

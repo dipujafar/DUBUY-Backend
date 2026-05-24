@@ -1,15 +1,11 @@
 export const orderStatus = {
   on_progress: 'on_progress',
-  payment_request: 'payment_request',
-  reject_payment_request: 'reject_payment_request',
   completed: 'completed',
   canceled: 'canceled',
 };
 
 export const ORDER_STATUS = [
   orderStatus.on_progress,
-  orderStatus.payment_request,
-  orderStatus.reject_payment_request,
   orderStatus.completed,
   orderStatus.canceled,
 ] as const;

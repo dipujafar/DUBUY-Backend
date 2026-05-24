@@ -65,6 +65,25 @@ const deleteOrders = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// ---------------------------------------------------------------------- update order status -------------
+const updateShippingStatus = catchAsync(async (req: Request, res: Response) => {
+  const { orderId } = req.params;
+  const { shippingStatusId } = req.body;
+
+  const result = await ordersService.updateShippingStatus(
+    orderId,
+    shippingStatusId,
+    req.files,
+  );
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Shipping status updated successfully',
+    data: result,
+  });
+});
+
 export const ordersController = {
   createOrders,
   getAllOrders,
@@ -72,4 +91,5 @@ export const ordersController = {
   getOrdersById,
   updateOrders,
   deleteOrders,
+  updateShippingStatus,
 };

@@ -6,6 +6,7 @@ export const loginZodValidationSchema = z.object({
     .object({
       phoneNumber: z.string().optional(),
       email: z.string().email('Invalid email format!').optional(),
+      fcmToken: z.string().optional(),
       password: z.string({
         required_error: 'Password is required!',
       }),

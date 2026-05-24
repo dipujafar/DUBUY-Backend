@@ -27,5 +27,5 @@ export interface IOrders {
 }
 
 export interface IOrdersModules extends Model<IOrders> {
-  isOrderExist(id: string): Promise<IOrders | null>;
+  isOrderExists(id: string): Promise<IOrders | null>;
 }

@@ -3,7 +3,18 @@ import { IOrders } from './orders.interface';
 import Orders from './orders.models';
 import AppError from '../../error/AppError';
 import QueryBuilder from '../../class/builder/QueryBuilder';
-import { orderStatus } from './orders.constants';
+import {
+  orderDisplayStatus,
+  orderStatus,
+  shippingSteps,
+} from './orders.constants';
+import Requests from '../product-requests/requests.models';
+import { uploadManyToS3 } from '../../utils/s3';
+import { displayStatus } from '../product-requests/requests.constants';
+
+interface UploadedFiles {
+  arrivedImages?: Express.Multer.File[];
+}
 
 const createOrders = async (payload: IOrders) => {
   const result = await Orders.create(payload);
@@ -53,11 +64,7 @@ const getAllOrders = async (query: Record<string, any>) => {
           {
             $match: {
               status: {
-                $in: [
-                  orderStatus.on_progress,
-                  orderStatus.payment_request,
-                  orderStatus.reject_payment_request,
-                ],
+                $in: [orderStatus.on_progress],
               },
             },
           },
@@ -165,6 +172,167 @@ const deleteOrders = async (id: string) => {
   return result;
 };
 
+//  ------------------------------------------- update orders shipping -------------------------------------------
+
+const updateShippingStatus = async (
+  orderId: string,
+  shippingStatusId: string,
+  files: any,
+) => {
+  // ── 1. Find the order ──────────────────────────────────────────
+  const order = await Orders.findById(orderId);
+  if (!order) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Order not found');
+  }
+
+  // ── 2. Find the shipping step inside the order ─────────────────
+  const stepIndex = order.shippingStatus.findIndex(
+    (s: any) => s._id.toString() === shippingStatusId,
+  );
+
+  if (stepIndex === -1) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Shipping step not found');
+  }
+
+  const step = order.shippingStatus[stepIndex];
+
+  // ── 3. Guard: Payment 75% Received cannot be set manually ──────
+  if (step.status === shippingSteps.payment_75_received) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This step is updated automatically once payment is received and accepted. You cannot change it manually.',
+    );
+  }
+
+  // ── 4. Already complete? ───────────────────────────────────────
+  if (step.isComplete) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This shipping step is already marked as complete',
+    );
+  }
+
+  // ── 5. Handle each step ────────────────────────────────────────
+  switch (step.status) {
+    // ── Purchased in UAE ────────────────────────────────────────
+    case shippingSteps.purchased_in_UAE: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      break;
+    }
+
+    // ── In Warehouse (Dubai) ────────────────────────────────────
+    case shippingSteps.in_dubai_warehouse: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      order.displayStatus = orderDisplayStatus.in_warehouse;
+      break;
+    }
+
+    // ── Shipped to Libya ────────────────────────────────────────
+    case shippingSteps.shipped_to_libya: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      order.displayStatus = orderDisplayStatus.in_transit;
+      break;
+    }
+
+    // ── In Libya Warehouse ──────────────────────────────────────
+    case shippingSteps.in_libya_warehouse: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      order.displayStatus = orderDisplayStatus.in_warehouse;
+      break;
+    }
+
+    // ── Arrived Item Image ──────────────────────────────────────
+    case shippingSteps.arrived_item_image: {
+      const uploadedFiles = files as UploadedFiles;
+
+      if (!uploadedFiles?.arrivedImages?.length) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Arrived item images are required for this step',
+        );
+      }
+
+      // Find the linked product request
+      const productRequest = await Requests.findById(order.product);
+      if (!productRequest) {
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          'Linked product request not found',
+        );
+      }
+
+      // Upload images to S3
+      const imgsArray = uploadedFiles.arrivedImages.map(file => ({
+        file,
+        path: `images/arrived`,
+      }));
+
+      const uploadedImages = await uploadManyToS3(imgsArray);
+
+      // Push into arrivedImages on the product request
+      await Requests.findByIdAndUpdate(productRequest._id, {
+        $push: { arrivedImages: { $each: uploadedImages } },
+      });
+
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      break;
+    }
+
+    // ── Ready To Collect ────────────────────────────────────────
+    case shippingSteps.ready_to_collect: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+      order.displayStatus = orderDisplayStatus.ready_to_collect;
+      break;
+    }
+
+    // ── Completed ───────────────────────────────────────────────
+    case shippingSteps.completed: {
+      order.shippingStatus[stepIndex].isComplete = true;
+      order.shippingStatus[stepIndex].updatedAt = new Date();
+
+      // Mark order as completed
+      order.status = orderStatus.completed as any;
+      order.displayStatus = orderDisplayStatus.completed;
+
+      // Mark the linked product request as completed
+      const productRequest = await Requests.findById(order.product);
+      if (!productRequest) {
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          'Linked product request not found',
+        );
+      }
+
+      await Requests.findByIdAndUpdate(productRequest._id, {
+        displayStatus: displayStatus.completed,
+        // If your requests schema has a `status` field with a completed value,
+        // update it here too — e.g.: status: status.completed
+      });
+
+      break;
+    }
+
+    // ── Fallback (unknown / unhandled step) ─────────────────────
+    default: {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `No handler defined for shipping step: ${step.status}`,
+      );
+    }
+  }
+
+  // ── 6. Persist the order ───────────────────────────────────────
+  const updatedOrder = await order.save();
+
+  return updatedOrder;
+};
+
 export const ordersService = {
   createOrders,
   getAllOrders,
@@ -172,4 +340,5 @@ export const ordersService = {
   getOrdersById,
   updateOrders,
   deleteOrders,
+  updateShippingStatus,
 };

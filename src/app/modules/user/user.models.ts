@@ -19,6 +19,10 @@ const userSchema: Schema<IUser> = new Schema(
       trim: true,
       unique: true,
     },
+    fcmToken: {
+      type: String,
+      default: null,
+    },
 
     password: {
       type: String,
@@ -63,37 +67,6 @@ const userSchema: Schema<IUser> = new Schema(
       type: String,
       default: null,
     },
-
-    //extra info
-    // customerId: {
-    //   type: String,
-    //   default: null,
-    // },
-    // privacySettings: {
-    //   type: Boolean,
-    //   default: true,
-    // },
-    // bio: {
-    //   type: String,
-    //   default: null,
-    // },
-    // rank: {
-    //   type: String,
-    // },
-    // fleet: {
-    //   type: Number,
-    //   enum: [797, 777, 787, 350, 380],
-    // },
-    // agreements: {
-    //   type: String,
-    //   default: null,
-    // },
-    // referralCode: {
-    //   type: String,
-    //   default: null,
-    // },
-
-    //auth info
     loginWth: {
       type: String,
       enum: Login_With,
@@ -173,27 +146,6 @@ userSchema.pre('save', async function (next) {
 
   next();
 });
-
-// set '' after saving password
-// userSchema.post(
-//   'save',
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   function (error: Error, doc: any, next: (error?: Error) => void): void {
-//     doc.verification.otp = 0;
-//     doc.password = '';
-//     next();
-//   },
-// );
-
-// userSchema.post(
-//   'findOneAndUpdate',
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   function (error: Error, doc: any, next: (error?: Error) => void): void {
-//     doc.verification.otp = 0;
-//     doc.password = '';
-//     next();
-//   },
-// );
 
 userSchema.statics.isUserExist = async function (phoneNumber: string) {
   return await User.findOne({ phoneNumber: phoneNumber }).select('+password');

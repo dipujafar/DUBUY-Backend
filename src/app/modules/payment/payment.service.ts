@@ -8,7 +8,11 @@ import Requests from '../product-requests/requests.models';
 import { paymentStatus } from './payment.constants';
 import Orders from '../orders/orders.models';
 import mongoose, { get } from 'mongoose';
-import { orderDisplayStatus, orderStatus } from '../orders/orders.constants';
+import {
+  orderDisplayStatus,
+  orderStatus,
+  shippingSteps,
+} from '../orders/orders.constants';
 
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
@@ -83,7 +87,7 @@ const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
     if (isOrderExists?.displayStatus === orderDisplayStatus.payment_request) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Already sent initial payment request. Please wait for admin approval',
+        'Already sent 75% payment request. Please wait for admin approval',
       );
     }
 
@@ -91,7 +95,6 @@ const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
       order,
       {
         displayStatus: orderDisplayStatus.payment_request,
-        status: orderStatus.payment_request,
       },
       { new: true, session },
     );
@@ -156,67 +159,149 @@ const acceptPaymentIntoDB = async (id: string) => {
       payment.productRequest as string,
     );
 
-    const getNeedToPay = isRequestExists?.totalPrice * 0.75;
-    const currentPay = getNeedToPay - isRequestExists?.needToPay;
-
-    const updateRequestData = {
-      status: status.accepted,
-      displayStatus: displayStatus.on_progress,
-      needToPay: currentPay,
-      needToPayPercent: 75,
-      totalPaid: isRequestExists?.needToPay,
-    };
-
-    // update request
-    const updateProductRequest = await Requests.findByIdAndUpdate(
-      payment.productRequest,
-      updateRequestData,
-      {
-        new: true,
-        session,
-      },
+    const isOrderExists: any = await Orders.isOrderExists(
+      payment.order as string,
     );
 
-    if (!updateProductRequest) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Failed to update product request',
-      );
+    if (!isRequestExists && !isOrderExists) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
     }
 
-    // create order
-    const order = await Orders.create(
-      [
+    if (isRequestExists) {
+      const getNeedToPay = isRequestExists?.totalPrice * 0.75;
+      const currentPay = getNeedToPay - isRequestExists?.needToPay;
+
+      const updateRequestData = {
+        status: status.accepted,
+        displayStatus: displayStatus.on_progress,
+        needToPay: currentPay,
+        needToPayPercent: 75,
+        totalPaid: isRequestExists?.needToPay,
+      };
+
+      // update request
+      const updateProductRequest = await Requests.findByIdAndUpdate(
+        payment.productRequest,
+        updateRequestData,
         {
-          product: payment.productRequest,
-          payment: payment._id,
-          user: updateProductRequest.user,
+          new: true,
+          session,
         },
-      ],
-      { session },
-    );
+      );
 
-    // update payment
-    const result = await Payment.findByIdAndUpdate(
-      id,
-      {
-        order: order[0]._id,
-        status: paymentStatus.accepted,
-      },
-      {
-        new: true,
-        session,
-      },
-    );
+      if (!updateProductRequest) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Failed to update product request',
+        );
+      }
 
-    if (!result) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
+      // create order
+      const order = await Orders.create(
+        [
+          {
+            product: payment.productRequest,
+            payment: payment._id,
+            user: updateProductRequest.user,
+          },
+        ],
+        { session },
+      );
+
+      // update payment
+      const result = await Payment.findByIdAndUpdate(
+        id,
+        {
+          order: order[0]._id,
+          status: paymentStatus.accepted,
+        },
+        {
+          new: true,
+          session,
+        },
+      );
+
+      if (!result) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
+      }
+
+      await session.commitTransaction();
+      await session.endSession();
+
+      return result;
+    }
+
+    if (isOrderExists && !isRequestExists) {
+      // Mark "Payment 75% Received" shipping step as complete
+      await Orders.findByIdAndUpdate(
+        payment.order,
+        {
+          displayStatus: orderDisplayStatus.in_warehouse,
+          $set: {
+            'shippingStatus.$[step].isComplete': true,
+            'shippingStatus.$[step].updatedAt': new Date(),
+          },
+        },
+        {
+          arrayFilters: [{ 'step.status': shippingSteps.payment_75_received }],
+          new: true,
+          session,
+        },
+      );
+
+      const productRequest: any = await Requests.isRequestExists(
+        isOrderExists?.product,
+      );
+
+      const getNeedToPay = productRequest?.totalPrice;
+      const currentPay = getNeedToPay - productRequest?.needToPay;
+
+      const updateRequestData = {
+        needToPay: currentPay,
+        needToPayPercent: 100,
+        totalPaid: productRequest?.totalPrice * 0.75,
+      };
+
+      // update request
+      const updateProductRequest = await Requests.findByIdAndUpdate(
+        productRequest._id,
+        updateRequestData,
+        {
+          new: true,
+          session,
+        },
+      );
+
+      if (!updateProductRequest) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Failed to update product data',
+        );
+      }
+      const result = await Payment.findByIdAndUpdate(
+        id,
+        {
+          status: paymentStatus.accepted,
+        },
+        {
+          new: true,
+          session,
+        },
+      );
+
+      if (!result) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
+      }
+
+      await session.commitTransaction();
+      await session.endSession();
+
+      return result;
     }
 
     await session.commitTransaction();
     await session.endSession();
-
-    return result;
+    return payment;
   } catch (error) {
     await session.abortTransaction();
     await session.endSession();
@@ -242,25 +327,43 @@ const rejectPaymentIntoDB = async (id: string) => {
       throw new AppError(httpStatus.BAD_REQUEST, 'Payment already rejected');
     }
 
-    // update request
-    const updateRequest = await Requests.findByIdAndUpdate(
-      payment.productRequest,
-      {
-        displayStatus: displayStatus.reject_payment_request,
-      },
-      {
-        new: true,
-        session,
-      },
-    );
-
-    if (!updateRequest) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        'Failed to update request status',
+    if (payment.productRequest) {
+      // update request
+      const updateRequest = await Requests.findByIdAndUpdate(
+        payment.productRequest,
+        {
+          displayStatus: displayStatus.reject_payment_request,
+        },
+        {
+          new: true,
+          session,
+        },
       );
-    }
 
+      if (!updateRequest) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          'Failed to update request status',
+        );
+      }
+    }
+    if (!payment.productRequest && payment.order) {
+      // update order
+      const updateOrder = await Orders.findByIdAndUpdate(
+        payment.order,
+        {
+          displayStatus: orderDisplayStatus.reject_payment_request,
+        },
+        {
+          new: true,
+          session,
+        },
+      );
+
+      if (!updateOrder) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Failed to update order');
+      }
+    }
     // update payment
     const result = await Payment.findByIdAndUpdate(
       id,
@@ -295,7 +398,23 @@ const rejectPaymentIntoDB = async (id: string) => {
 const getAllPayment = async (query: Record<string, any>) => {
   query['isDeleted'] = false;
 
-  const paymentModel = new QueryBuilder(Payment.find(), query)
+  const paymentModel = new QueryBuilder(
+    Payment.find()
+      .populate({
+        path: 'order',
+        populate: {
+          path: 'product',
+        },
+      })
+      .populate({
+        path: 'order',
+        populate: {
+          path: 'user',
+        },
+      })
+      .populate('moneyTransferCompany'),
+    query,
+  )
     .search([])
     .filter()
     .paginate()
