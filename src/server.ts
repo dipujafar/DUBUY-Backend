@@ -1,10 +1,15 @@
+import dns from 'dns';
+// Force Google DNS servers before any connection attempt
+dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+dns.setDefaultResultOrder('ipv4first');
+
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { createServer, Server } from 'http';
 import mongoose from 'mongoose';
 import app from './app';
 import config from './app/config';
 import { defaultTask } from './app/utils/defaultTask';
-import colors from 'colors';  
+import colors from 'colors';
 
 let server: Server;
 const socketServer = createServer(app);
@@ -12,7 +17,7 @@ let currentPort: number = Number(config.port) | 5000;
 let portCount = 0;
 
 async function main() {
-  try { 
+  try {
     await mongoose.connect(config.database_url as string);
     defaultTask();
     server = app.listen(Number(currentPort), config.ip as string, () => {
@@ -22,7 +27,6 @@ async function main() {
         ),
       );
     });
-    
 
     // server.on('error', (err: any) => {
     //   if (err.code === 'EADDRINUSE') {

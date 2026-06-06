@@ -6,6 +6,7 @@ export type QueryObject = {
 export type TLogin = {
   phoneNumber?: string;
   email?: string;
+  fcmToken?: string;
   password: string;
 };
 export type TChangePassword = {

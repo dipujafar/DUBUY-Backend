@@ -197,6 +197,10 @@ userSchema.statics.isPasswordMatched = async function (
   return await bcrypt.compare(plainTextPassword, hashedPassword);
 };
 
+userSchema.statics.GetAdminUser = async function () {
+  return await User.findOne({ role: USER_ROLE.admin });
+};
+
 userSchema.post('save', function (doc, next) {
   doc.password = '';
   doc.verification.otp = 0;

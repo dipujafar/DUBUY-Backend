@@ -77,6 +77,7 @@ const login = async (payload: TLogin, req: Request) => {
       device: result.device.model || 'Desktop',
       lastLogin: new Date().toISOString(),
     },
+    ...(payload.fcmToken && { fcmToken: payload.fcmToken }),
   };
 
   await User.findByIdAndUpdate(user?.user?._id, data, {
