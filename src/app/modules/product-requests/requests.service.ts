@@ -4,12 +4,34 @@ import Requests from './requests.models';
 import AppError from '../../error/AppError';
 import QueryBuilder from '../../class/builder/QueryBuilder';
 import { displayStatus, status } from './requests.constants';
+import { User } from '../user/user.models';
+import { Notification } from '../notification/notification.model';
+import { sendNotification } from '../../utils/firebase';
 
 const createRequests = async (payload: IRequests) => {
   const result = await Requests.create(payload);
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create requests');
   }
+
+  const admin = await User.GetAdminUser();
+  const notificationPayload = {
+    message: `A new product request received`,
+    description: `A new product request has been received from customer. Please check the details in product requests page.`,
+  };
+
+  await Notification.create({
+    ...notificationPayload,
+    receiver: admin?._id!.toString() || '',
+  });
+
+  if (admin.fcmToken) {
+    await sendNotification([admin.fcmToken], {
+      ...notificationPayload,
+      userId: admin?._id!.toString() || '',
+    });
+  }
+
   return result;
 };
 

@@ -56,15 +56,13 @@ const login = (payload, req) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const parser = new ua_parser_js_1.default(userAgent);
     const result = parser.getResult();
-    const data = {
-        device: {
+    const data = Object.assign({ device: {
             ip: ip,
             browser: result.browser.name,
             os: result.os.name,
             device: result.device.model || 'Desktop',
             lastLogin: new Date().toISOString(),
-        },
-    };
+        } }, (payload.fcmToken && { fcmToken: payload.fcmToken }));
     yield user_models_1.User.findByIdAndUpdate((_h = user === null || user === void 0 ? void 0 : user.user) === null || _h === void 0 ? void 0 : _h._id, data, {
         new: true,
         upsert: false,

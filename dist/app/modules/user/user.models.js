@@ -190,6 +190,11 @@ userSchema.statics.isPasswordMatched = function (plainTextPassword, hashedPasswo
         return yield bcrypt_1.default.compare(plainTextPassword, hashedPassword);
     });
 };
+userSchema.statics.GetAdminUser = function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield exports.User.findOne({ role: user_constants_1.USER_ROLE.admin });
+    });
+};
 userSchema.post('save', function (doc, next) {
     doc.password = '';
     doc.verification.otp = 0;

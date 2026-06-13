@@ -23,6 +23,8 @@ const user_utils_1 = require("./user.utils");
 const requests_models_1 = __importDefault(require("../product-requests/requests.models"));
 const orders_models_1 = __importDefault(require("../orders/orders.models"));
 const orders_constants_1 = require("../orders/orders.constants");
+const notification_model_1 = require("../notification/notification.model");
+const firebase_1 = require("../../utils/firebase");
 const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const exitUser = yield (0, user_utils_1.checkUserExit)(payload);
     if (exitUser) {
@@ -41,6 +43,15 @@ const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_models_1.User.create(payload);
     if (!user) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'User creation failed');
+    }
+    const admin = yield user_models_1.User.GetAdminUser();
+    const notificationPayload = {
+        message: `New User Created An Account`,
+        description: `A new user has registered with the name ${user.name}.`,
+    };
+    yield notification_model_1.Notification.create(Object.assign(Object.assign({}, notificationPayload), { receiver: (admin === null || admin === void 0 ? void 0 : admin._id.toString()) || '' }));
+    if (admin.fcmToken) {
+        yield (0, firebase_1.sendNotification)([admin.fcmToken], Object.assign(Object.assign({}, notificationPayload), { userId: (admin === null || admin === void 0 ? void 0 : admin._id.toString()) || '' }));
     }
     return user;
 });
