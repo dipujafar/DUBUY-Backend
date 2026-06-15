@@ -3,6 +3,7 @@ export const status = {
   quotation: 'quotation',
   accepted: 'accepted',
   rejected: 'rejected',
+  completed: 'completed',
 } as const;
 
 export const statusEnum = [
@@ -10,6 +11,7 @@ export const statusEnum = [
   status.quotation,
   status.accepted,
   status.rejected,
+  status.completed,
 ] as const;
 
 export const displayStatus = {

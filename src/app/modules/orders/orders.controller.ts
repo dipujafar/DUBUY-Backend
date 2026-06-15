@@ -70,6 +70,7 @@ const updateShippingStatus = catchAsync(async (req: Request, res: Response) => {
   const { orderId } = req.params;
   const { shippingStatusId } = req.body;
 
+
   const result = await ordersService.updateShippingStatus(
     orderId,
     shippingStatusId,

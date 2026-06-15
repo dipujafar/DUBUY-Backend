@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FilterQuery, Query } from 'mongoose';
+import { FilterQuery, Query, Types } from 'mongoose';
 
 class QueryBuilder<T> {
   public modelQuery: Query<T[], T>;
@@ -39,6 +39,29 @@ class QueryBuilder<T> {
 
     return this;
   }
+
+  searchWithRef(
+    localFields: string[],
+    refIds: Types.ObjectId[],
+    refField: string,
+  ) {
+    const searchTerm = this?.query?.searchTerm;
+    if (!searchTerm) return this;
+
+    const localConditions = localFields.map(field => ({
+      [field]: { $regex: searchTerm, $options: 'i' },
+    }));
+
+    const refCondition =
+      refIds.length > 0 ? [{ [refField]: { $in: refIds } }] : [];
+
+    this.modelQuery = this.modelQuery.find({
+      $or: [...localConditions, ...refCondition],
+    } as FilterQuery<T>);
+
+    return this;
+  }
+
   //rated base filter
 
   ratedFilter<K extends keyof T>(field: string, range: Number) {

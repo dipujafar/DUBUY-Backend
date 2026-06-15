@@ -15,7 +15,8 @@ export const orderDisplayStatus = {
   payment_request: 'Payment Request',
   reject_payment_request: 'Reject Payment Request',
   in_transit: 'In Transit',
-  in_warehouse: 'In Warehouse',
+  in_uea_warehouse: 'In UAE Warehouse',
+  in_warehouse: 'In Libya Warehouse',
   ready_to_collect: 'Ready To Collect',
   completed: 'Completed',
 } as const;
@@ -25,6 +26,7 @@ export const ORDER_DISPLAY_STATUS = [
   orderDisplayStatus.payment_request,
   orderDisplayStatus.reject_payment_request,
   orderDisplayStatus.in_transit,
+  orderDisplayStatus.in_uea_warehouse,
   orderDisplayStatus.in_warehouse,
   orderDisplayStatus.ready_to_collect,
   orderDisplayStatus.completed,
@@ -33,7 +35,7 @@ export const ORDER_DISPLAY_STATUS = [
 export const shippingSteps = {
   payment_receive: 'Payment Receive',
   purchased_in_UAE: 'Purchased in UAE',
-  in_dubai_warehouse: 'In Warehouse',
+  in_dubai_warehouse: 'In UAE Warehouse',
   shipped_to_libya: 'Shipped to Libya',
   in_libya_warehouse: 'In Libya Warehouse',
   payment_75_received: 'Payment 75% Received',

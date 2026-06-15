@@ -7,12 +7,8 @@ import { displayStatus, status } from '../product-requests/requests.constants';
 import Requests from '../product-requests/requests.models';
 import { paymentStatus } from './payment.constants';
 import Orders from '../orders/orders.models';
-import mongoose, { get } from 'mongoose';
-import {
-  orderDisplayStatus,
-  orderStatus,
-  shippingSteps,
-} from '../orders/orders.constants';
+import mongoose from 'mongoose';
+import { orderDisplayStatus, shippingSteps } from '../orders/orders.constants';
 
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
@@ -408,6 +404,13 @@ const getAllPayment = async (query: Record<string, any>) => {
       })
       .populate({
         path: 'order',
+        populate: {
+          path: 'user',
+        },
+      })
+      .populate('productRequest')
+      .populate({
+        path: 'productRequest',
         populate: {
           path: 'user',
         },

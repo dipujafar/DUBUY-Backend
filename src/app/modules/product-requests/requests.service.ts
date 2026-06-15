@@ -7,6 +7,7 @@ import { displayStatus, status } from './requests.constants';
 import { User } from '../user/user.models';
 import { Notification } from '../notification/notification.model';
 import { sendNotification } from '../../utils/firebase';
+import { Types } from 'mongoose';
 
 const createRequests = async (payload: IRequests) => {
   const result = await Requests.create(payload);
@@ -67,11 +68,29 @@ const updateRequestsForResendQuotation = async (
 
 // ------------------------------------------ get all requests ------------------------------------------
 const getAllRequests = async (query: Record<string, any>) => {
+  let userIds: Types.ObjectId[] = [];
+
+  if (query.searchTerm) {
+    const matchingUsers = await User.find({
+      $or: [
+        { name: { $regex: query.searchTerm, $options: 'i' } },
+        { email: { $regex: query.searchTerm, $options: 'i' } },
+        { phoneNumber: { $regex: query.searchTerm, $options: 'i' } },
+      ],
+    }).select('_id');
+
+    userIds = matchingUsers.map(u => u._id);
+  }
+
   const requestsModel = new QueryBuilder(
     Requests.find().populate('user'),
     query,
   )
-    .search([])
+    .searchWithRef(
+      ['title', 'productLink'], // local fields
+      userIds, // pre-resolved user IDs
+      'user', // ref field name
+    )
     .filter()
     .paginate()
     .sort()

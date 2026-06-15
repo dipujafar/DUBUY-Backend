@@ -10,7 +10,7 @@ import {
 } from './orders.constants';
 import Requests from '../product-requests/requests.models';
 import { uploadManyToS3 } from '../../utils/s3';
-import { displayStatus } from '../product-requests/requests.constants';
+import { displayStatus, status } from '../product-requests/requests.constants';
 
 interface UploadedFiles {
   arrivedImages?: Express.Multer.File[];
@@ -211,6 +211,7 @@ const updateShippingStatus = async (
       'This shipping step is already marked as complete',
     );
   }
+  
 
   // ── 5. Handle each step ────────────────────────────────────────
   switch (step.status) {
@@ -218,6 +219,7 @@ const updateShippingStatus = async (
     case shippingSteps.purchased_in_UAE: {
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
+      order.displayStatus = orderDisplayStatus.in_uea_warehouse;
       break;
     }
 
@@ -311,6 +313,7 @@ const updateShippingStatus = async (
 
       await Requests.findByIdAndUpdate(productRequest._id, {
         displayStatus: displayStatus.completed,
+        status: status.completed,
         // If your requests schema has a `status` field with a completed value,
         // update it here too — e.g.: status: status.completed
       });
