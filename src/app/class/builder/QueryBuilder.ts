@@ -42,8 +42,7 @@ class QueryBuilder<T> {
 
   searchWithRef(
     localFields: string[],
-    refIds: Types.ObjectId[],
-    refField: string,
+    refs: { ids: Types.ObjectId[]; field: string }[],
   ) {
     const searchTerm = this?.query?.searchTerm;
     if (!searchTerm) return this;
@@ -52,16 +51,21 @@ class QueryBuilder<T> {
       [field]: { $regex: searchTerm, $options: 'i' },
     }));
 
-    const refCondition =
-      refIds.length > 0 ? [{ [refField]: { $in: refIds } }] : [];
+    const refConditions = refs
+      .filter(ref => ref.ids.length > 0)
+      .map(ref => ({ [ref.field]: { $in: ref.ids } }));
+
+    const numericConditions =
+      !isNaN(Number(searchTerm)) && searchTerm !== ''
+        ? localFields.map(field => ({ [field]: Number(searchTerm) }))
+        : [];
 
     this.modelQuery = this.modelQuery.find({
-      $or: [...localConditions, ...refCondition],
+      $or: [...localConditions, ...refConditions, ...numericConditions],
     } as FilterQuery<T>);
 
     return this;
   }
-
   //rated base filter
 
   ratedFilter<K extends keyof T>(field: string, range: Number) {

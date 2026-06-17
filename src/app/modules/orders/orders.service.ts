@@ -11,6 +11,10 @@ import {
 import Requests from '../product-requests/requests.models';
 import { uploadManyToS3 } from '../../utils/s3';
 import { displayStatus, status } from '../product-requests/requests.constants';
+import { Types } from 'mongoose';
+import { User } from '../user/user.models';
+import MoneyTransferCompany from '../moneyTransferCompany/moneyTransferCompany.models';
+import Payment from '../payment/payment.models';
 
 interface UploadedFiles {
   arrivedImages?: Express.Multer.File[];
@@ -25,19 +29,74 @@ const createOrders = async (payload: IOrders) => {
 };
 
 const getAllOrders = async (query: Record<string, any>) => {
+  let userIds: Types.ObjectId[] = [];
+  let productIds: Types.ObjectId[] = [];
+  let paymentIds: Types.ObjectId[] = [];
+
+  if (query.searchTerm) {
+    const [matchingUsers, matchingProducts, matchingPayments] =
+      await Promise.all([
+        User.find({
+          $or: [
+            { name: { $regex: query.searchTerm, $options: 'i' } },
+            { email: { $regex: query.searchTerm, $options: 'i' } },
+            { phoneNumber: { $regex: query.searchTerm, $options: 'i' } },
+            { location: { $regex: query.searchTerm, $options: 'i' } },
+          ],
+        }).select('_id'),
+
+        Requests.find({
+          $or: [
+            { productLink: { $regex: query.searchTerm, $options: 'i' } },
+            { title: { $regex: query.searchTerm, $options: 'i' } },
+            { color: { $regex: query.searchTerm, $options: 'i' } },
+            { size: { $regex: query.searchTerm, $options: 'i' } },
+            ...(!isNaN(Number(query.searchTerm)) && query.searchTerm !== ''
+              ? [{ price: Number(query.searchTerm) }]
+              : []),
+          ],
+        }).select('_id'),
+
+        // Step 1: find matching moneyTransferCompanies
+        MoneyTransferCompany.find({
+          $or: [
+            { name: { $regex: query.searchTerm, $options: 'i' } },
+            { address: { $regex: query.searchTerm, $options: 'i' } },
+            { officeNumber: { $regex: query.searchTerm, $options: 'i' } },
+          ],
+        }).select('_id'),
+      ]);
+
+    userIds = matchingUsers.map(u => u._id);
+    productIds = matchingProducts.map(p => p._id);
+
+    // Step 2: find Payment docs that reference those companies
+    const matchingCompanyIds = matchingPayments.map(c => c._id);
+    if (matchingCompanyIds.length > 0) {
+      const matchingPaymentDocs = await Payment.find({
+        moneyTransferCompany: { $in: matchingCompanyIds },
+      }).select('_id');
+      paymentIds = matchingPaymentDocs.map(p => p._id);
+    }
+  }
   const ordersModel = new QueryBuilder(
     Orders.find()
       .populate('product')
       .populate('user')
       .populate({
         path: 'payment',
-        populate: {
-          path: 'moneyTransferCompany',
-        },
+        populate: { path: 'moneyTransferCompany' },
       }),
     query,
   )
-    .search([])
+    .searchWithRef(
+      ['displayStatus'], // local fields on Orders
+      [
+        { ids: userIds, field: 'user' }, // user ref
+        { ids: productIds, field: 'product' }, // product ref
+        { ids: paymentIds, field: 'payment' },
+      ],
+    )
     .filter()
     .paginate()
     .sort()
@@ -211,7 +270,6 @@ const updateShippingStatus = async (
       'This shipping step is already marked as complete',
     );
   }
-  
 
   // ── 5. Handle each step ────────────────────────────────────────
   switch (step.status) {
@@ -219,7 +277,7 @@ const updateShippingStatus = async (
     case shippingSteps.purchased_in_UAE: {
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
-      order.displayStatus = orderDisplayStatus.in_uea_warehouse;
+      order.displayStatus = orderDisplayStatus.in_uae_warehouse;
       break;
     }
 

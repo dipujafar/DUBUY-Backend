@@ -76,6 +76,7 @@ const getAllRequests = async (query: Record<string, any>) => {
         { name: { $regex: query.searchTerm, $options: 'i' } },
         { email: { $regex: query.searchTerm, $options: 'i' } },
         { phoneNumber: { $regex: query.searchTerm, $options: 'i' } },
+        { location: { $regex: query.searchTerm, $options: 'i' } },
       ],
     }).select('_id');
 
@@ -87,9 +88,8 @@ const getAllRequests = async (query: Record<string, any>) => {
     query,
   )
     .searchWithRef(
-      ['title', 'productLink'], // local fields
-      userIds, // pre-resolved user IDs
-      'user', // ref field name
+      ['title', 'productLink', 'quantity'],
+      [{ ids: userIds, field: 'user' }],
     )
     .filter()
     .paginate()
