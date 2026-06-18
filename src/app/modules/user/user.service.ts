@@ -11,6 +11,7 @@ import Orders from '../orders/orders.models';
 import { orderStatus } from '../orders/orders.constants';
 import { Notification } from '../notification/notification.model';
 import { sendNotification } from '../../utils/firebase';
+import { sendNotificationMessage } from '../notification/notification.utils';
 
 export type IFilter = {
   searchTerm?: string;
@@ -36,28 +37,21 @@ const createUser = async (payload: IUser): Promise<IUser> => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Password is required');
   }
 
+  console.log("hello");
+
   const user = await User.create(payload);
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
   }
-
   const admin = await User.GetAdminUser();
   const notificationPayload = {
     message: `New User Created An Account`,
     description: `A new user has registered with the name ${user.name}.`,
+    userId: admin?._id?.toString()!,
+    fcmToken: admin?.fcmToken
   };
 
-  await Notification.create({
-    ...notificationPayload,
-    receiver: admin?._id!.toString() || '',
-  });
-
-  if (admin.fcmToken) {
-    await sendNotification([admin.fcmToken], {
-      ...notificationPayload,
-      userId: admin?._id!.toString() || '',
-    });
-  }
+  await sendNotificationMessage(notificationPayload);
 
   return user;
 };

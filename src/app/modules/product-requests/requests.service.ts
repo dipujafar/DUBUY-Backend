@@ -5,9 +5,8 @@ import AppError from '../../error/AppError';
 import QueryBuilder from '../../class/builder/QueryBuilder';
 import { displayStatus, status } from './requests.constants';
 import { User } from '../user/user.models';
-import { Notification } from '../notification/notification.model';
-import { sendNotification } from '../../utils/firebase';
 import { Types } from 'mongoose';
+import { sendNotificationMessage } from '../notification/notification.utils';
 
 const createRequests = async (payload: IRequests) => {
   const result = await Requests.create(payload);
@@ -19,19 +18,12 @@ const createRequests = async (payload: IRequests) => {
   const notificationPayload = {
     message: `A new product request received`,
     description: `A new product request has been received from customer. Please check the details in product requests page.`,
+    userId: admin?._id?.toString() || '',
+    fcmToken: admin.fcmToken,
+
   };
 
-  await Notification.create({
-    ...notificationPayload,
-    receiver: admin?._id!.toString() || '',
-  });
-
-  if (admin.fcmToken) {
-    await sendNotification([admin.fcmToken], {
-      ...notificationPayload,
-      userId: admin?._id!.toString() || '',
-    });
-  }
+  await sendNotificationMessage(notificationPayload);
 
   return result;
 };
@@ -63,6 +55,18 @@ const updateRequestsForResendQuotation = async (
   if (!result) {
     throw new Error('Failed to update Requests');
   }
+
+  const user = await User.findById(result?.user);
+  const notificationPayload = {
+    message: `You have received Quotation`,
+    description: `You have received Quotation for product request. Please check the order details page.`,
+    userId: user?._id?.toString() || '',
+    fcmToken: user?.fcmToken,
+
+  };
+
+  await sendNotificationMessage(notificationPayload);
+
   return result;
 };
 
