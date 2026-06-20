@@ -39,4 +39,15 @@ router.patch(
   notificationControllers.markAsDone,
 );
 
+router.delete(
+  '/:id',
+  auth(
+    USER_ROLE.user,
+    USER_ROLE.admin,
+    USER_ROLE.sub_admin,
+    USER_ROLE.super_admin,
+  ),
+  notificationControllers.deleteNotification,
+);
+
 export const notificationRoutes = router;

@@ -9,8 +9,6 @@ import { checkUserExit } from './user.utils';
 import Requests from '../product-requests/requests.models';
 import Orders from '../orders/orders.models';
 import { orderStatus } from '../orders/orders.constants';
-import { Notification } from '../notification/notification.model';
-import { sendNotification } from '../../utils/firebase';
 import { sendNotificationMessage } from '../notification/notification.utils';
 
 export type IFilter = {
@@ -36,8 +34,6 @@ const createUser = async (payload: IUser): Promise<IUser> => {
   if (!payload.isGoogleLogin && !payload.password) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Password is required');
   }
-
-  console.log("hello");
 
   const user = await User.create(payload);
   if (!user) {

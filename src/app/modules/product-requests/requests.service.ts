@@ -92,7 +92,7 @@ const getAllRequests = async (query: Record<string, any>) => {
     query,
   )
     .searchWithRef(
-      ['title', 'productLink', 'quantity'],
+      ['title', 'productLink'],
       [{ ids: userIds, field: 'user' }],
     )
     .filter()
@@ -210,7 +210,7 @@ const rejectRequests = async (id: string) => {
   if (!isExists) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Product Request not found');
   }
-  console.log(isExists);
+
   if (isExists?.status !== status.request) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -225,6 +225,20 @@ const rejectRequests = async (id: string) => {
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject requests');
   }
+
+
+
+  const user = await User.findById(result?.user);
+  const notificationPayload = {
+    message: `Your product request has been rejected`,
+    description: `Your product request has been rejected. Please check the details in product requests page.`,
+    userId: user?._id?.toString() || '',
+    fcmToken: user?.fcmToken,
+
+  };
+  await sendNotificationMessage(notificationPayload);
+
+
   return result;
 };
 

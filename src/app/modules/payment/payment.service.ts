@@ -9,6 +9,8 @@ import { paymentStatus } from './payment.constants';
 import Orders from '../orders/orders.models';
 import mongoose from 'mongoose';
 import { orderDisplayStatus, shippingSteps } from '../orders/orders.constants';
+import { User } from '../user/user.models';
+import { sendNotificationMessage } from '../notification/notification.utils';
 
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
@@ -55,6 +57,17 @@ const createInitialPaymentIntoDB = async (payload: IPayment) => {
         'Failed to create payment request',
       );
     }
+
+    const admin = await User.GetAdminUser();
+    const notificationPayload = {
+      message: `A new payment request received`,
+      description: `A new payment request has been received from customer. Please check the details in payment tracking page.`,
+      userId: admin?._id?.toString()!,
+      fcmToken: admin?.fcmToken
+    };
+
+    await sendNotificationMessage(notificationPayload);
+
 
     await session.commitTransaction();
     return result;
