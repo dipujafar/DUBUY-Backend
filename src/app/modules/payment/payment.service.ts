@@ -15,7 +15,6 @@ import { sendNotificationMessage } from '../notification/notification.utils';
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
 
-  console.log(payload)
 
   const session = await mongoose.startSession();
 
