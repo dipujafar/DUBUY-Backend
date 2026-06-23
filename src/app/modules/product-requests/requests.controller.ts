@@ -55,6 +55,16 @@ const getAllRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAllSpamRequests = catchAsync(async (req: Request, res: Response) => {
+  const result = await requestsService.getAllSpamRequests(req.query);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'All product requests fetched successfully',
+    data: result,
+  });
+});
+
 const getRequestsById = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.getRequestsById(req.params.id);
   sendResponse(res, {
@@ -116,6 +126,17 @@ const rejectRequests = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// --------------------------------------------- verify spam product request ------------------------------------------------
+const verifySpamRequests = catchAsync(async (req: Request, res: Response) => {
+  const result = await requestsService.verifySpamRequests(req.params.id);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Requests verified successfully',
+    data: result,
+  });
+});
+
 // --------------------------------------------- delete product request ------------------------------------------------
 const deleteRequests = catchAsync(async (req: Request, res: Response) => {
   const result = await requestsService.deleteRequests(req.params.id);
@@ -132,6 +153,8 @@ export const requestsController = {
   updateRequestForResendQuotation,
   getMyReceivedQuotations,
   getAllRequests,
+  getAllSpamRequests,
+  verifySpamRequests,
   getRequestsById,
   getMyProductRequests,
   updateRequests,

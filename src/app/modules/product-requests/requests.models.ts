@@ -30,6 +30,7 @@ const requestsSchema = new Schema<IRequests>(
     needToPay: { type: 'number', default: null },
     needToPayPercent: { type: 'number', default: null },
     totalPaid: { type: 'number', default: 0 },
+    isSpam: { type: 'boolean', default: false },
     status: {
       type: 'string',
       enum: {

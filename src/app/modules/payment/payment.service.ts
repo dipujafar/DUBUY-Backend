@@ -15,6 +15,8 @@ import { sendNotificationMessage } from '../notification/notification.utils';
 const createInitialPaymentIntoDB = async (payload: IPayment) => {
   const { productRequest } = payload;
 
+  console.log(payload)
+
   const session = await mongoose.startSession();
 
   try {
@@ -48,6 +50,7 @@ const createInitialPaymentIntoDB = async (payload: IPayment) => {
 
     payload['amount'] = isExists?.needToPay;
     payload['paymentPercent'] = isExists?.needToPayPercent;
+    payload['user'] = isExists?.user;
 
     const [result] = await Payment.create([payload], { session });
 
@@ -58,9 +61,12 @@ const createInitialPaymentIntoDB = async (payload: IPayment) => {
       );
     }
 
+
+    const user = await User.findById(result?.user).session(session);
+
     const admin = await User.GetAdminUser();
     const notificationPayload = {
-      message: `A new payment request received`,
+      message: `A new payment request received from ${user?.name}`,
       description: `A new payment request has been received from customer. Please check the details in payment tracking page.`,
       userId: admin?._id?.toString()!,
       fcmToken: admin?.fcmToken
@@ -125,6 +131,7 @@ const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
 
     payload['amount'] = isRequestExists?.needToPay;
     payload['paymentPercent'] = isRequestExists?.needToPayPercent;
+    payload['user'] = isRequestExists?.user;
 
     const [result] = await Payment.create([payload], { session });
 
@@ -134,6 +141,19 @@ const createSecondPaymentInitIntoDB = async (payload: IPayment) => {
         'Failed to create payment request',
       );
     }
+
+    const user = await User.findById(result?.user).session(session);
+
+    const admin = await User.GetAdminUser();
+    const notificationPayload = {
+      message: `A new payment request received from ${user?.name}`,
+      description: `A new payment request has been received from customer. Please check the details in payment tracking page.`,
+      userId: admin?._id?.toString()!,
+      fcmToken: admin?.fcmToken
+    };
+
+    await sendNotificationMessage(notificationPayload);
+
 
     await session.commitTransaction();
     return result;
@@ -233,6 +253,17 @@ const acceptPaymentIntoDB = async (id: string) => {
       if (!result) {
         throw new AppError(httpStatus.BAD_REQUEST, 'Failed to accept payment');
       }
+
+      const user = await User.findById(result?.user).session(session);
+
+      const notificationPayload = {
+        message: `Your payment request has been accepted`,
+        description: `Your payment request has been accepted successfully. Please check the order page for details.`,
+        userId: user?._id?.toString()!,
+        fcmToken: user?.fcmToken
+      };
+
+      await sendNotificationMessage(notificationPayload);
 
       await session.commitTransaction();
       await session.endSession();
@@ -388,6 +419,18 @@ const rejectPaymentIntoDB = async (id: string) => {
     if (!result) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Failed to reject payment');
     }
+
+
+    const user = await User.findById(result?.user).session(session);
+
+    const notificationPayload = {
+      message: `Your payment request has been rejected`,
+      description: `Your payment request has been rejected.`,
+      userId: user?._id?.toString()!,
+      fcmToken: user?.fcmToken
+    };
+
+    await sendNotificationMessage(notificationPayload);
 
     await session.commitTransaction();
     await session.endSession();

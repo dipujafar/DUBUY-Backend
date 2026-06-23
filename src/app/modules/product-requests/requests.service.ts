@@ -7,9 +7,13 @@ import { displayStatus, status } from './requests.constants';
 import { User } from '../user/user.models';
 import { Types } from 'mongoose';
 import { sendNotificationMessage } from '../notification/notification.utils';
+import { validateProductLink } from './requests.utils';
 
 const createRequests = async (payload: IRequests) => {
-  const result = await Requests.create(payload);
+  const isSpam = await validateProductLink(payload.productLink);
+
+  const result = await Requests.create({ ...payload, isSpam });
+
   if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Failed to create requests');
   }
@@ -17,7 +21,7 @@ const createRequests = async (payload: IRequests) => {
   const admin = await User.GetAdminUser();
   const notificationPayload = {
     message: `A new product request received`,
-    description: `A new product request has been received from customer. Please check the details in product requests page.`,
+    description: `A new product request has been received from customer. Please check the details in product requests page or spam folder.`,
     userId: admin?._id?.toString() || '',
     fcmToken: admin.fcmToken,
 
@@ -88,7 +92,7 @@ const getAllRequests = async (query: Record<string, any>) => {
   }
 
   const requestsModel = new QueryBuilder(
-    Requests.find().populate('user'),
+    Requests.find({ isSpam: { $ne: true } }).populate('user'),
     query,
   )
     .searchWithRef(
@@ -138,6 +142,22 @@ const getAllRequests = async (query: Record<string, any>) => {
     meta,
   };
 };
+const getAllSpamRequests = async (query: Record<string, any>) => {
+  const results = new QueryBuilder(Requests.find({ isSpam: true }).populate('user'), query)
+    .search([])
+    .filter()
+    .paginate()
+    .sort()
+    .fields();
+
+  const data = await results.modelQuery;
+  const meta = await results.countTotal();
+  return {
+    data,
+    meta,
+  };
+
+}
 // ------------------------------------------ get requests by id ------------------------------------------
 const getRequestsById = async (id: string) => {
   const result = await Requests.findById(id);
@@ -242,6 +262,19 @@ const rejectRequests = async (id: string) => {
   return result;
 };
 
+// ------------------------------------------ verify spam requests ------------------------------------------
+const verifySpamRequests = async (id: string) => {
+  const result = await Requests.findByIdAndUpdate(
+    id,
+    { isSpam: false },
+    { new: true },
+  );
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Failed to verify spam requests');
+  }
+  return result;
+}
+
 // ------------------------------------------ delete requests ------------------------------------------
 const deleteRequests = async (id: string) => {
   const isDeleted = await Requests.isRequestsDeleted(id);
@@ -265,8 +298,10 @@ export const requestsService = {
   getMyReceivedQuotation,
   getMyProductRequests,
   getAllRequests,
+  getAllSpamRequests,
   getRequestsById,
   updateRequest,
   rejectRequests,
   deleteRequests,
+  verifySpamRequests
 };

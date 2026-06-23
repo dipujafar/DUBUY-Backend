@@ -7,6 +7,7 @@ export interface IPayment {
   paymentPercent: number;
   productRequest: ObjectId;
   moneyTransferCompany: ObjectId;
+  user: ObjectId;
   status: keyof typeof paymentStatus;
   isDeleted: boolean;
 }

@@ -21,6 +21,11 @@ const paymentSchema = new Schema<IPayment>(
       ref: 'MoneyTransferCompany',
       required: true,
     },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     status: {
       type: 'string',
       enum: {

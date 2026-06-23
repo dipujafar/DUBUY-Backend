@@ -33,6 +33,12 @@ router.patch(
 );
 
 router.patch(
+  '/verify-spam/:id',
+  auth(USER_ROLE.admin),
+  requestsController.verifySpamRequests,
+)
+
+router.patch(
   '/:id',
   auth(USER_ROLE.admin),
   validateRequest(requestValidation.updateRequestSchema),
@@ -52,6 +58,13 @@ router.get(
   auth(USER_ROLE.user),
   requestsController.getMyReceivedQuotations,
 );
+
+router.get(
+  '/spam-requests',
+  auth(USER_ROLE.user, USER_ROLE.admin),
+  requestsController.getAllSpamRequests,
+);
+
 
 router.get(
   '/:id',

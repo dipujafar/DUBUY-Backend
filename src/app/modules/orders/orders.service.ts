@@ -15,6 +15,7 @@ import { Types } from 'mongoose';
 import { User } from '../user/user.models';
 import MoneyTransferCompany from '../moneyTransferCompany/moneyTransferCompany.models';
 import Payment from '../payment/payment.models';
+import { sendNotificationMessage } from '../notification/notification.utils';
 
 interface UploadedFiles {
   arrivedImages?: Express.Multer.File[];
@@ -238,6 +239,9 @@ const updateShippingStatus = async (
   shippingStatusId: string,
   files: any,
 ) => {
+  let notificationMessage: string = '';
+  let notificationDescription: string = '';
+
   // ── 1. Find the order ──────────────────────────────────────────
   const order = await Orders.findById(orderId);
   if (!order) {
@@ -278,6 +282,8 @@ const updateShippingStatus = async (
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
       order.displayStatus = orderDisplayStatus.in_uae_warehouse;
+      notificationMessage = 'Item has been purchased in UAE';
+      notificationDescription = 'Your order item has been purchased in UAE, please check your order details.';
       break;
     }
 
@@ -286,6 +292,9 @@ const updateShippingStatus = async (
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
       order.displayStatus = orderDisplayStatus.in_warehouse;
+
+      notificationMessage = 'Item has been shipped to dubai warehouse';
+      notificationDescription = 'Your order item has been shipped to dubai warehouse, please check your order details.';
       break;
     }
 
@@ -294,6 +303,9 @@ const updateShippingStatus = async (
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
       order.displayStatus = orderDisplayStatus.in_transit;
+
+      notificationMessage = 'Item has been shipped to Libya';
+      notificationDescription = 'Your order item has been shipped to Libya, please check your order details.';
       break;
     }
 
@@ -302,6 +314,9 @@ const updateShippingStatus = async (
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
       order.displayStatus = orderDisplayStatus.in_warehouse;
+
+      notificationMessage = 'Item has been shipped to Libya warehouse';
+      notificationDescription = 'Your order item has been shipped to Libya warehouse, please check your order details.';
       break;
     }
 
@@ -309,34 +324,35 @@ const updateShippingStatus = async (
     case shippingSteps.arrived_item_image: {
       const uploadedFiles = files as UploadedFiles;
 
-      if (!uploadedFiles?.arrivedImages?.length) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          'Arrived item images are required for this step',
-        );
+      if (uploadedFiles?.arrivedImages?.length) {
+        // Find the linked product request
+        const productRequest = await Requests.findById(order.product);
+        if (!productRequest) {
+          throw new AppError(
+            httpStatus.NOT_FOUND,
+            'Linked product request not found',
+          );
+        }
+
+        // Upload images to S3
+        const imgsArray = uploadedFiles.arrivedImages.map(file => ({
+          file,
+          path: `images/arrived`,
+        }));
+
+        const uploadedImages = await uploadManyToS3(imgsArray);
+
+        // Push into arrivedImages on the product request
+        await Requests.findByIdAndUpdate(productRequest._id, {
+          $push: { arrivedImages: { $each: uploadedImages } },
+        });
+
+        notificationMessage = 'Received the arrived item images';
+        notificationDescription = `You received the arrived item images, please check order details.`;
+      } else {
+        notificationMessage = ' ';
+        notificationDescription = ' ';
       }
-
-      // Find the linked product request
-      const productRequest = await Requests.findById(order.product);
-      if (!productRequest) {
-        throw new AppError(
-          httpStatus.NOT_FOUND,
-          'Linked product request not found',
-        );
-      }
-
-      // Upload images to S3
-      const imgsArray = uploadedFiles.arrivedImages.map(file => ({
-        file,
-        path: `images/arrived`,
-      }));
-
-      const uploadedImages = await uploadManyToS3(imgsArray);
-
-      // Push into arrivedImages on the product request
-      await Requests.findByIdAndUpdate(productRequest._id, {
-        $push: { arrivedImages: { $each: uploadedImages } },
-      });
 
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
@@ -348,6 +364,8 @@ const updateShippingStatus = async (
       order.shippingStatus[stepIndex].isComplete = true;
       order.shippingStatus[stepIndex].updatedAt = new Date();
       order.displayStatus = orderDisplayStatus.ready_to_collect;
+      notificationMessage = 'Item is ready to collect';
+      notificationDescription = `Your order is ready to collect, please contact with business team.`;
       break;
     }
 
@@ -359,6 +377,8 @@ const updateShippingStatus = async (
       // Mark order as completed
       order.status = orderStatus.completed as any;
       order.displayStatus = orderDisplayStatus.completed;
+      notificationMessage = 'Order completed';
+      notificationDescription = `Your order is completed successfully. Thank you for your order.`;
 
       // Mark the linked product request as completed
       const productRequest = await Requests.findById(order.product);
@@ -390,6 +410,17 @@ const updateShippingStatus = async (
 
   // ── 6. Persist the order ───────────────────────────────────────
   const updatedOrder = await order.save();
+
+  const user = await User.findById(order?.user)
+
+  const notificationPayload = {
+    message: notificationMessage,
+    description: notificationDescription,
+    userId: user?._id?.toString()!,
+    fcmToken: user?.fcmToken
+  };
+
+  await sendNotificationMessage(notificationPayload);
 
   return updatedOrder;
 };

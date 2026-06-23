@@ -20,6 +20,7 @@ export interface IRequests {
   quantity: number;
   needToPay: number;
   needToPayPercent: number;
+  isSpam: boolean;
   totalPaid: number;
   status: keyof typeof status;
   displayStatus: DisplayStatus;
